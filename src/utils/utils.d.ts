@@ -1,0 +1,1 @@
+export declare function isClass(entity: any): boolean;
