@@ -23,18 +23,12 @@ const validateColumn = column => {
 		if(isNullable(column.size))
 			column.size = 32;
 	}
-	else if(column.type == Type.ENUM) {
+
+	// Values
+	if(!isNullable(column.values)) {
 		if(!Array.isArray(column.values) || column.values.length == 0)
-			throw newError(`values necesarios para type ENUM`);
-		if(
-			isNullable(column.values[0]) ||
-			(
-				typeof column.values[0] != "string" &&
-				typeof column.values[0] != "number" &&
-				typeof column.values[0] != "number"
-			)
-		) throw newError(`los elementos de values deben ser STRING o NUMBER`);
-		if(column.values.some(v => typeof v != typeof column.values[0]))
+			throw newError(`values debe ser un array con algún valor`);
+		if(column.values.some(v => typeof v != typeof column.values[0] || (typeof v == "object" && v.constructor.name != column.values[0].constructor.name)))
 			throw newError(`todos los elementos de values deben ser del mismo tipo`);
 		if(column.values.hasDuplicates())
 			throw newError(`no puede haber elementos repetidos en values`);
@@ -62,30 +56,30 @@ const validateColumn = column => {
 		case null: break;
 		case undefined: break;
 		default:
-			if(typeof column.default != "function") {
-				if(
-					(
-						(column.type == Type.INT || column.type == Type.FLOAT) &&
-						typeof column.default != "number"
-					) ||
-					(
-						(column.type == Type.STRING || column.type == Type.TEXT) &&
-						typeof column.default != "string"
-					) ||
-					(
-						(column.type == Type.DATE || column.type == Type.DATETIME) &&
-						!(column.default instanceof Date)
-					) ||
-					(
-						column.type == Type.BOOLEAN &&
-						typeof column.default != "boolean"
-					) ||
-					(
-						column.type == Type.ENUM &&
-						!column.values.includes(column.default)
-					)
-				) throw newError(`valor default erróneo '${column.default}'`);
-			}
+			const defVal = typeof column.default == "function" ? column.default() : column.default;
+
+			if(
+				(
+					(column.type == Type.INT || column.type == Type.FLOAT) &&
+					(typeof defVal != "number")
+				) ||
+				(
+					(column.type == Type.UINT) &&
+					(typeof defVal != "number" || defVal < 0)
+				) ||
+				(
+					(column.type == Type.STRING || column.type == Type.TEXT) &&
+					(typeof defVal != "string")
+				) ||
+				(
+					(column.type == Type.DATE || column.type == Type.DATETIME) &&
+					!(defVal instanceof Date)
+				) ||
+				(
+					(column.type == Type.BOOLEAN) &&
+					(typeof defVal != "boolean")
+				)
+			) throw newError(`valor default erróneo '${defVal}'`);
 			break;
 	}
 	
@@ -128,7 +122,7 @@ const validateConfig = config => {
 		if(Object.keys(config.columns).includes(`created_at`))
 			throw newError(`columns no puede tener el campo 'created_at'`);
 		else
-			config.columns[`created_at`] = { type: Type.DATETIME, default: () => 'now()' };
+			config.columns[`created_at`] = { type: Type.DATETIME, default: () => new Date() };
 	}
 
 	// modifiedAt
@@ -137,7 +131,7 @@ const validateConfig = config => {
 		if(Object.keys(config.columns).includes(`modified_at`))
 			throw newError(`columns no puede tener el campo 'modified_at'`);
 		else
-			config.columns[`modified_at`] = { type: Type.DATETIME, default: () => 'now()' };
+			config.columns[`modified_at`] = { type: Type.DATETIME, default: () => new Date() };
 	}
 
 	// Columns
@@ -172,6 +166,8 @@ const validateConfig = config => {
 	{
 		if(!Array.isArray(config.fg))
 			throw newError(`fg debe ser un Array`)
+		if(config.fg.hasDuplicates())
+			throw newError(`no puede haber elementos repetidos fg`);
 
 		for (let i = 0; i < config.fg.length; i++) {
 			const fg = config.fg[0];

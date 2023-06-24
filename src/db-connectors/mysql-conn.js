@@ -18,7 +18,7 @@ function dbTypeParse(data) {
 
 function getType(type, se) {
 	switch (type[0]) {
-		case "int":
+		case "int": // falta uint
 			return { type: Type.INT, size: parseInt(se) };
 		case "float":
 			return { type: Type.FLOAT };
@@ -33,10 +33,8 @@ function getType(type, se) {
 		case "enum":
 			if(se[0] == 'Y' && se[0] == 'N')
 				return { type: Type.BOOLEAN };
-			else
-				return { type: Type.ENUM, values: se };
 		default:
-			return { type: Type.INT, size: 11 };
+			return { type: -1 }
 	}
 }
 
@@ -51,6 +49,10 @@ export class MysqlConnector extends DBConnector {
 	static TypeFunc = {
 		[Type.INT]: {
 			t: (size=11) => `INT(${size})`,
+			d: data => data,
+		},
+		[Type.UINT]: {
+			t: (size=11) => `INT(${size}) UNSIGNED`,
 			d: data => data,
 		},
 		[Type.FLOAT]: {
@@ -76,20 +78,15 @@ export class MysqlConnector extends DBConnector {
 		[Type.BOOLEAN]: {
 			t: () => `ENUM('Y', 'N')`,
 			d: data => data === true ? 'Y' : 'N',
-		},
-		[Type.ENUM]: {
-			t: (_, values) => `ENUM(${values.map(v => `'${v}'`).join(", ")})`,
-			d: data => data,
-		},
+		}
 	};
 
 	static getColumnSql = (columnName, columnData) => {
-		let columnSQL = `\`${columnName}\` ${this.TypeFunc[columnData.type].t(columnData.size, columnData.values)}`;
-		columnSQL += columnData.required ? ` NOT NULL` : ``;
+		let columnSQL = `\`${columnName}\` ${this.TypeFunc[columnData.type].t(columnData.size)}`;
+		if(columnData.required)
+			columnSQL += ` NOT NULL`;
 		if(!isNullable(columnData.pk))
 			columnSQL += ` PRIMARY KEY` + (columnData.pk == TypePK.NONE ? `` : ` ${this.TypePK[columnData.pk]}`);
-		if(!columnData.required || columnData.default !== undefined)
-			columnSQL += ` DEFAULT ` + (isNullable(columnData.default) ? `NULL` : (typeof columnData.default == "function" ? columnData.default() : `'${this.TypeFunc[columnData.type].d(columnData.default)}'`));
 		return columnSQL;
 	}
 
@@ -148,11 +145,17 @@ export class MysqlConnector extends DBConnector {
 
 	async createTable() {
 		// Faltan los unique
-		let sqlCad = `CREATE TABLE \`${this.pref + this.schemaConfig.table}\` (`;
-		sqlCad += this.schemaConfig.columns.map((key, value) => this.constructor.getColumnSql(key, value))
-			.map(e => '\t' + e)
-			.join(',\n')
-		sqlCad += `) ${this.constructor.tableExtra};`;
-		return await this.idbd.execute(sqlCad);
+		let sqlCad = `CREATE TABLE \`${this.table}\` (`
+			+ '\n'
+			+ [
+				...this.schemaConfig.columns.map((key, value) => this.constructor.getColumnSql(key, value)).map(e => '\t' + e),
+				...this.schemaConfig.fg.map(modelInfo => `\`${modelInfo.model.name.toLowerCase() + "_id"}\` ${this.constructor.TypeFunc[modelInfo.model.config.columns[modelInfo.model.connector.pkName].type].t(modelInfo.model.config.columns[modelInfo.model.connector.pkName].size)} ${modelInfo.required ? `NOT` : `DEFAULT`} NULL`).map(e => '\t' + e),
+				...this.schemaConfig.unique.map(unique => Array.isArray(unique) ? `UNIQUE KEY \`${unique.join("_")}\` (\`${unique.join("`,`")}\`)` : `UNIQUE KEY \`${unique}\` (\`${unique}\`)`).map(e => '\t' + e),
+				...this.schemaConfig.fg.map(modelInfo => `CONSTRAINT \`${this.table}_ibfk_${modelInfo.model.name.toLowerCase() + "_id"}\` FOREIGN KEY (\`${modelInfo.model.name.toLowerCase() + "_id"}\`) REFERENCES \`${modelInfo.model.connector.table}\` (\`${modelInfo.model.connector.pkName}\`)`).map(e => '\t' + e),
+			].filter(e => e!=null).join(',\n')
+			+ "\n"
+			+ `) ${this.constructor.tableExtra};`;
+		console.log(sqlCad)
+		//return await this.idbd.execute(sqlCad);
 	};
 }

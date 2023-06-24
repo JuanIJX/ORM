@@ -167,11 +167,13 @@ export class DBConnector {
 	 * Crea la tabla o edita si ya está creada y hay cambios
 	 */
 	load = async () => {
+		await this.createTable();
+		return;
 		if(this.tables.includes(this.table)) {
 			console.log(`Se debe comparar la tabla ${this.table}`);
 			const dbTable = await this.constructor.tableToObject(this.table);
 			console.log(dbTable);
-			console.log(this.schemaConfig);
+			//console.log(this.schemaConfig);
 		}
 		else {
 			console.log(`Se debe crear la tabla ${this.table}`);

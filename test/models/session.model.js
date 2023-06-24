@@ -8,7 +8,7 @@ export default class Session extends Schema {
 			token: { type: Type.STRING, size: 64, pk: TypePK.NONE },
 			name: { type: Type.STRING },
 			password: { type: Type.STRING },
-			state: { type: Type.ENUM, values: [ 3, 4 ] },
+			state: { type: Type.INT, values: [ 3, 4 ] },
 		},
 		unique: [ "name" ],
 		createdAt: true,
