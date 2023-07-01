@@ -1,4 +1,3 @@
-import { Type } from "../types/db-type.js";
 import { validateEntity, validateInitConfig } from "../utils/validations.js"
 import { newError } from "./error.js";
 import { Schema } from "./schema.js";
@@ -25,7 +24,7 @@ export class ORM {
 			throw newError(`No se pueden añadir entidades despues de inicializar`);
 		if(this._modelsTemp.has(entity))
 			throw newError(`Entity ${entity.name} repetido`);
-		if(entity.prototype instanceof Schema == false)
+		if(entity.prototype instanceof Schema == false) // Schema.isPrototypeOf(entity)
 			throw newError(`Entity ${entity.name} debe extender Schema`);
 		validateEntity(entity);
 

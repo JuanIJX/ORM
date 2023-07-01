@@ -50,34 +50,42 @@ export class MysqlConnector extends DBConnector {
 		[Type.INT]: {
 			t: (size=11) => `INT(${size})`,
 			d: data => data,
+			o: data => data,
 		},
 		[Type.UINT]: {
 			t: (size=11) => `INT(${size}) UNSIGNED`,
 			d: data => data,
+			o: data => data,
 		},
 		[Type.FLOAT]: {
 			t: () => `FLOAT`,
 			d: data => data,
+			o: data => data,
 		},
 		[Type.STRING]: {
-			t: (size=11) => `VARCHAR(${size})`,
+			t: (size=32) => `VARCHAR(${size})`,
 			d: data => data,
+			o: data => data,
 		},
 		[Type.TEXT]: {
 			t: () => `TEXT`,
 			d: data => data,
+			o: data => data,
 		},
 		[Type.DATE]: {
 			t: () => `DATE`,
 			d: data => (data instanceof Date) ? data.format(`Y-m-d`) : data,
+			o: data => data,
 		},
 		[Type.DATETIME]: {
 			t: () => `DATETIME`,
 			d: data => (data instanceof Date) ? data.format(`Y-m-d H:i:s`) : data,
+			o: data => data,
 		},
 		[Type.BOOLEAN]: {
 			t: () => `ENUM('Y', 'N')`,
 			d: data => data === true ? 'Y' : 'N',
+			o: data => data === 'Y' ? true : false,
 		}
 	};
 
@@ -118,6 +126,7 @@ export class MysqlConnector extends DBConnector {
 
 
 	// Abstract functions
+	static async getTables() { return (await this.idbd.rows(`SHOW TABLES;`)).map(e => Object.values(e)[0]); }
 	static async tableToObject(table) {
 		const obj = { table: table, columns: {}, unique: [], fg: [] };
 		(await this.idbd.rows(`SHOW COLUMNS FROM ??;`, table)).forEach(column => {
@@ -130,13 +139,22 @@ export class MysqlConnector extends DBConnector {
 		});
 		return obj;
 	};
-	static async getTables() { return (await this.idbd.rows(`SHOW TABLES;`)).map(e => Object.values(e)[0]); }
-	static async getAllElements(table, selects, orders, order=true) { return await this.idbd.rows(`SELECT ?? FROM ?? ORDER BY ?? ${order ? "ASC": "DESC"}`, [selects, table, orders]); }
-	static async getRangeElements(table, selects, orders, tam, pag, order=true) { return await this.idbd.rows(`SELECT ?? FROM ?? ORDER BY ?? ${order ? "ASC": "DESC"} LIMIT ? OFFSET ?`, [selects, table, orders, tam, pag * tam]); }
-	static async getElementById(table, key, value) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?`, [table, key, value]); }
+
+	static async getAllElements(table, selects="*", orders=null, order=true) { return await this.idbd.rows(`SELECT ?? FROM ??${orders!=null ? ` ORDER BY ` + orders.join(", ") + (order ? "ASC": "DESC") : ``}`, [selects, table]); }
+	static async getRangeElements(table, selects, tam, pag, orders=null, order=true) { return await this.idbd.rows(`SELECT ?? FROM ??${orders!=null ? ` ORDER BY ` + orders.join(", ") + (order ? "ASC": "DESC") : ``} LIMIT ? OFFSET ?`, [selects, table, orders, tam, pag * tam]); }
+	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?`, [table, pkName, id]); }
 	static async addElement(table, data) { return await this.idbd.execute(`INSERT INTO ?? SET ?`, [table, data]); }
-	static async updateElementById(table, data, key, value) { return await this.idbd.execute(`UPDATE ?? SET ? WHERE ?? = ?`, [table, data, key, value]); }
-	static async deleteElementById(table, key, value) { return await this.idbd.execute(`DELETE FROM ?? WHERE ?? = ?`, [table, key, value]); }
+	static async updateElementById(table, data, pkName, id) {
+		const values = [];
+		const campos = [];
+		for (const key in data) {
+			campos.push(`${key} = ?`);
+			values.push(data[key]);
+		}
+		values.push(id);
+		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?`, values);
+	}
+	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ?? WHERE ?? = ?`, [table, pkName, id]); }
 
 
 	constructor(idbd, schemaConfig) {
@@ -149,13 +167,13 @@ export class MysqlConnector extends DBConnector {
 			+ '\n'
 			+ [
 				...this.schemaConfig.columns.map((key, value) => this.constructor.getColumnSql(key, value)).map(e => '\t' + e),
-				...this.schemaConfig.fg.map(modelInfo => `\`${modelInfo.model.name.toLowerCase() + "_id"}\` ${this.constructor.TypeFunc[modelInfo.model.config.columns[modelInfo.model.connector.pkName].type].t(modelInfo.model.config.columns[modelInfo.model.connector.pkName].size)} ${modelInfo.required ? `NOT` : `DEFAULT`} NULL`).map(e => '\t' + e),
-				...this.schemaConfig.unique.map(unique => Array.isArray(unique) ? `UNIQUE KEY \`${unique.join("_")}\` (\`${unique.join("`,`")}\`)` : `UNIQUE KEY \`${unique}\` (\`${unique}\`)`).map(e => '\t' + e),
-				...this.schemaConfig.fg.map(modelInfo => `CONSTRAINT \`${this.table}_ibfk_${modelInfo.model.name.toLowerCase() + "_id"}\` FOREIGN KEY (\`${modelInfo.model.name.toLowerCase() + "_id"}\`) REFERENCES \`${modelInfo.model.connector.table}\` (\`${modelInfo.model.connector.pkName}\`)`).map(e => '\t' + e),
+				...this.schemaConfig.fg.map(modelInfo => `\`${modelInfo.model.fgName()}\` ${this.constructor.TypeFunc[modelInfo.model.config.columns[modelInfo.model.connector.pkName].type].t(modelInfo.model.config.columns[modelInfo.model.connector.pkName].size)} ${modelInfo.required ? `NOT` : `DEFAULT`} NULL`).map(e => '\t' + e),
+				...this.schemaConfig.unique.map(unique => { unique = (Array.isArray(unique) ? unique : [unique]); return `UNIQUE KEY \`${unique.join("_")}\` (\`${unique.join("`,`")}\`)` }).map(e => '\t' + e),
+				...this.schemaConfig.fg.map(modelInfo => `CONSTRAINT \`${this.table}_ibfk_${modelInfo.model.fgName()}\` FOREIGN KEY (\`${modelInfo.model.fgName()}\`) REFERENCES \`${modelInfo.model.connector.table}\` (\`${modelInfo.model.connector.pkName}\`) ON DELETE ${modelInfo.delete ? 'CASCADE' : 'RESTRICT'} ON UPDATE ${modelInfo.update ? 'CASCADE' : 'RESTRICT'}`).map(e => '\t' + e),
 			].filter(e => e!=null).join(',\n')
 			+ "\n"
 			+ `) ${this.constructor.tableExtra};`;
-		console.log(sqlCad)
-		//return await this.idbd.execute(sqlCad);
+		//console.log(sqlCad)
+		return await this.idbd.execute(sqlCad);
 	};
 }

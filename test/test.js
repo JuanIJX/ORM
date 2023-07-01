@@ -2,17 +2,6 @@ import MysqlPool from "../src/db-connectors/MySQL_pool.js";
 import { Type } from "../src/index.js";
 import { wait } from "../src/utils/utils.js";
 
-function dbTypeParse(data) {
-	const [a, ...b] = data.split(" ");
-	const pos = a.indexOf("(");
-	if(pos == -1) return [[a]];
-
-	let c = a.substring(pos+1, a.length - 1);
-	return [
-		[ a.substring(0, pos), ...b ],
-		c[0] == "'" ? c.split(",").map(item => item.replace(/'/g, "")) : c
-	];
-}
 
 
 (async () => {
@@ -25,10 +14,32 @@ function dbTypeParse(data) {
 	else
 		console.log("ok");*/
 
-		console.log(dbTypeParse("float"))
-		console.log(dbTypeParse("enum('3','4')"))
-		console.log(dbTypeParse("varchar(64)"))
-		console.log(dbTypeParse("int(4) unsigned zerofill"))
+	var values = [
+		"tablita", {
+			a: "aa",
+			b: "bb",
+			c: "cc",
+		},
+		"pkName",
+		"idvalue"
+	];
+
+	const [table, data, ...cosa] = values;
+	const campos = [];
+
+	for (const key in data) {
+		campos.push(`${key} = ?`);
+		cosa.unshift(data[key]);
+	}
+	cosa.unshift(table);
+
+	console.log(table);
+	console.log(data);
+	console.log(cosa);
+	console.log(`UPDATE ?? SET ${campos.join(", ")} WHERE ?? = ?`);
+
+
+
 
 
 

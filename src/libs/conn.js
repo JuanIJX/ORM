@@ -35,6 +35,13 @@ export class DBConnector {
 
 	/**
 	 * ABSTRACT
+	 * Obtiene todas las tablas de la base de datos
+	 * 
+	 * @returns array con todas las tablas
+	 */
+	static async getTables() { return []; }
+	/**
+	 * ABSTRACT
 	 * Devuelve un objeto con los datos de una tabla determinada
 	 * 
 	 * @param {string} table nombre de la tabla 
@@ -42,13 +49,8 @@ export class DBConnector {
 	 */
 	static async tableToObject(table) { return {}; }
 
-	/**
-	 * ABSTRACT
-	 * Obtiene todas las tablas de la base de datos
-	 * 
-	 * @returns array con todas las tablas
-	 */
-	static async getTables() { return []; }
+
+	// Abstract functions repository
 
 	/**
 	 * ABSTRACT
@@ -61,8 +63,7 @@ export class DBConnector {
 	 * @param order (default true) Si es true se utilizara ASC en el ORDER
 	 * @returns Array de objetos
 	 */
-	static async getAllElements(table, selects, orders, order=true) { return []; }
-
+	static async getAllElements(table, selects="*", orders=null, order=true) { return []; }
 	/**
 	 * ABSTRACT
 	 * Obtiene un array con los objetos indicados mediante paginación
@@ -76,20 +77,18 @@ export class DBConnector {
 	 * @param order (default true) Si es true se utilizara ASC en el ORDER
 	 * @returns Array de objetos
 	 */
-	static async getRangeElements(table, selects, orders, tam, pag, order=true) { return []; }
-
+	static async getRangeElements(table, selects, tam, pag, orders=null, order=true) { return []; }
 	/**
 	 * ABSTRACT
 	 * Obtiene un elemento por su ID
 	 * [table, id key, id value]
 	 * 
 	 * @param table Nombre de la tabla
-	 * @param key Nombre de la ID
-	 * @param value Valor de la ID
+	 * @param pkName Nombre de la ID
+	 * @param id Valor de la ID
 	 * @returns Objeto
 	 */
-	static async getElementById(table, key, value) { return null; }
-
+	static async getElementById(table, pkName, id) { return null; }
 	/**
 	 * ABSTRACT
 	 * Añade un elemento
@@ -107,7 +106,6 @@ export class DBConnector {
 	}
 	 */
 	static async addElement(table, data) { return null; }
-
 	/**
 	 * ABSTRACT
 	 * Actualiza un elemento
@@ -115,8 +113,8 @@ export class DBConnector {
 	 * 
 	 * @param table Nombre de la tabla
 	 * @param data Nuevos datos
-	 * @param key Nombre de la ID
-	 * @param value Valor de la ID
+	 * @param pkName Nombre de la ID
+	 * @param id Valor de la ID
 	 * @returns Ejemplo de Mysql ResultSetHeader {
 		fieldCount: 0,
 		affectedRows: 1,
@@ -127,7 +125,7 @@ export class DBConnector {
 		changedRows: 1
 	}
 	 */
-	static async updateElementById(table, data, key, value) { return {}; }
+	static async updateElementById(table, data, pkName, id) { return {}; }
 
 	/**
 	 * ABSTRACT
@@ -135,10 +133,10 @@ export class DBConnector {
 	 * [table, id key, id value]
 	 * 
 	 * @param table Nombre de la tabla
-	 * @param key Nombre de la ID
-	 * @param value Valor de la ID
+	 * @param pkName Nombre de la ID
+	 * @param id Valor de la ID
 	 */
-	static async deleteElementById(table, key, value) { return {}; }
+	static async deleteElementById(table, pkName, id) { return {}; }
 
 
 
@@ -155,30 +153,29 @@ export class DBConnector {
 		Object.defineProperty(this, `_schemaConfig`, { value: schemaConfig });
 
 		this.table = this.pref + this.schemaConfig.table;
-		this.pkName = Object.entries(this.schemaConfig.columns).find(([_, value]) => typeof value.pk == "number")[0];
+		//this.pkName = Object.entries(this.schemaConfig.columns).find(([_, value]) => typeof value.pk == "number")[0];
 	}
 
 	get idbd() { return this.constructor.idbd; }
 	get pref() { return this.idbd.pref; }
 	get schemaConfig() { return this._schemaConfig; }
 	get tables() { return this.constructor._tables; }
+	get pkName() { return this.schemaConfig.pkName; }
+
+	debug(msg) {}
 
 	/**
 	 * Crea la tabla o edita si ya está creada y hay cambios
 	 */
-	load = async () => {
-		await this.createTable();
-		return;
+	async load() {
 		if(this.tables.includes(this.table)) {
-			console.log(`Se debe comparar la tabla ${this.table}`);
+			//console.log(`Se debe comparar la tabla ${this.table}`);
+			//console.log(`Posible edicion`);
 			const dbTable = await this.constructor.tableToObject(this.table);
-			console.log(dbTable);
 			//console.log(this.schemaConfig);
 		}
-		else {
-			console.log(`Se debe crear la tabla ${this.table}`);
-			await this.createTable();
-		}
+		else
+			await this.createTable().then(() => this.debug(`Tabla '${this.table}' creada`));
 	}
 
 	/**
@@ -190,10 +187,18 @@ export class DBConnector {
 	 */
 	addCommand(name, func) { return Object.defineProperty(this, name, { value : func, enumerable: true }); }
 
+	// Functions repository (resumido)
+	async getAllElements(selects="*", orders=null, order=true) { return await this.constructor.getAllElements(this.table, selects, orders, order); }
+	async getRangeElements( selects, tam, pag, orders, order=true) { return await this.constructor.getRangeElements(this.table, selects, tam, pag, orders, order=true); }
+	async getElementById(id) { return await this.constructor.getElementById(this.table, this.pkName, id); }
+	async addElement(data) { return await this.constructor.addElement(this.table, data); }
+	async updateElementById(data, id) { return await this.constructor.updateElementById(this.table, data, this.pkName, id); }
+	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
 
 
 
-	// Funciones Abstractas para implementar
+
+	// Funciones abstractas del objeto
 
 	/**
 	 * ABSTRACT

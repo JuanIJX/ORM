@@ -1,9 +1,10 @@
 import { isClass, isInteger, isNullable, isTypeNotNull, isTypeStringNotEmpty } from "./utils.js";
-import { Type } from "../types/db-type.js";
+import { Type, TypeFunc } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
 import { newError } from "../libs/error.js";
 import { Connector } from "../types/connectors.js";
 import { Schema } from "../libs/schema.js";
+import { TypeFG } from "../types/fg-type.js";
 
 const validateTableName = tableName => (/^[A-Za-z_][A-Za-z0-9_$]*$/).test(tableName);
 const validateColumn = column => {
@@ -43,7 +44,7 @@ const validateColumn = column => {
 	}
 
 	// Required
-	column.required = isNullable(column.required) ? true : false;
+	column.required = isNullable(column.required) ? false : column.required;
 	if(typeof column.required != "boolean")
 		throw newError(`column.required debe ser TRUE o FALSE`);
 
@@ -57,29 +58,8 @@ const validateColumn = column => {
 		case undefined: break;
 		default:
 			const defVal = typeof column.default == "function" ? column.default() : column.default;
-
-			if(
-				(
-					(column.type == Type.INT || column.type == Type.FLOAT) &&
-					(typeof defVal != "number")
-				) ||
-				(
-					(column.type == Type.UINT) &&
-					(typeof defVal != "number" || defVal < 0)
-				) ||
-				(
-					(column.type == Type.STRING || column.type == Type.TEXT) &&
-					(typeof defVal != "string")
-				) ||
-				(
-					(column.type == Type.DATE || column.type == Type.DATETIME) &&
-					!(defVal instanceof Date)
-				) ||
-				(
-					(column.type == Type.BOOLEAN) &&
-					(typeof defVal != "boolean")
-				)
-			) throw newError(`valor default erróneo '${defVal}'`);
+			if(!TypeFunc[column.type](defVal))
+				throw newError(`valor default erróneo '${defVal}'`);
 			break;
 	}
 	
@@ -118,21 +98,13 @@ const validateConfig = config => {
 
 	// createdAt
 	config.createdAt = config.createdAt === true ? true : false;
-	if(config.createdAt) {
-		if(Object.keys(config.columns).includes(`created_at`))
-			throw newError(`columns no puede tener el campo 'created_at'`);
-		else
-			config.columns[`created_at`] = { type: Type.DATETIME, default: () => new Date() };
-	}
+	if(config.createdAt && Object.keys(config.columns).includes(`created_at`))
+		throw newError(`columns no puede tener el campo 'created_at'`);
 
 	// modifiedAt
 	config.modifiedAt = config.modifiedAt === true ? true : false;
-	if(config.modifiedAt) {
-		if(Object.keys(config.columns).includes(`modified_at`))
-			throw newError(`columns no puede tener el campo 'modified_at'`);
-		else
-			config.columns[`modified_at`] = { type: Type.DATETIME, default: () => new Date() };
-	}
+	if(config.modifiedAt && Object.keys(config.columns).includes(`modified_at`))
+		throw newError(`columns no puede tener el campo 'modified_at'`);
 
 	// Columns
 	validateColumns(config.columns);
@@ -178,12 +150,34 @@ const validateConfig = config => {
 			if(fg.model.prototype instanceof Schema == false)
 				throw newError(`fg[${0}] debe extender de Schema`);
 			
+			// Type
+			if(isNullable(fg.type))
+				fg.type = TypeFG.ManyToOne;
+			else if(!Object.values(TypeFG).includes(fg.type))
+				throw newError(`model(${fg.model.name}) fg.type no tiene un valor correcto`);
+			
 			// Required
-			fg.required = isNullable(fg.required) ? true : false;
-			if(typeof fg.required != "boolean")
-				throw newError(`fg.required debe ser TRUE o FALSE`);
+			if(isNullable(fg.required))
+				fg.required = true;
+			else if(typeof fg.required != "boolean")
+				throw newError(`model(${fg.model.name}) fg.required debe ser TRUE o FALSE`);
+
+			// On delete
+			if(isNullable(fg.delete))
+				fg.delete = true;
+			else if(typeof fg.delete != "boolean")
+				throw newError(`model(${fg.model.name}) fg.delete debe ser TRUE o FALSE`);
+
+			// On update
+			if(isNullable(fg.update))
+				fg.update = false;
+			else if(typeof fg.update != "boolean")
+				throw newError(`model(${fg.model.name}) fg.update debe ser TRUE o FALSE`);
 		}
 	}
+
+	// Foreigns dependientes
+	config.dpFg = [];
 
 	return true;
 }
