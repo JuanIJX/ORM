@@ -1,5 +1,5 @@
 /**
- * Last modified: 21/06/2023
+ * Last modified: 01/07/2023
  */
 
 import fs from "fs"
@@ -131,6 +131,9 @@ Object.defineProperties(Object.prototype, {
 
 // String
 Object.defineProperties(String.prototype, {
+	"camelToSnakeCase": { value: function() {
+		return this.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+	}, configurable: true, writable: true },
 	"camelCase": { value: function(sep="_", type=true) {
 		const arry = this.toLowerCase().split(sep);
 		if(type)

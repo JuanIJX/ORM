@@ -1,3 +1,5 @@
+'use strict'
+
 import { Type, TypeFunc } from "../types/db-type.js";
 import { TypeFG } from "../types/fg-type.js";
 import { isNullable } from "../utils/utils.js";
@@ -17,19 +19,20 @@ export class Schema {
 
 	// Load model to database
 	static async _load() {
+		this.config.columnsObj = {};
+
 		// Date columns
 		if(this.config.createdAt)
 			this.config.columns.created_at = { type: Type.DATETIME, required: true, default: () => new Date() };
 		if(this.config.modifiedAt)
 			this.config.columns.modified_at = { type: Type.DATETIME, required: true, default: () => new Date() };
 
-		// Save pk name
+		// Save pk name and copy config.columns
 		for (const columnName in this.config.columns) {
 			if (Object.hasOwnProperty.call(this.config.columns, columnName)) {
-				if(typeof this.config.columns[columnName].pk == "number") {
+				if(typeof this.config.columns[columnName].pk == "number")
 					this.config.pkName = columnName;
-					break;
-				}
+				this.config.columnsObj[columnName.camelCase("_")] = this.config.columns[columnName];
 			}
 		}
 
@@ -68,7 +71,7 @@ export class Schema {
 
 	}
 	static async add(data) {
-
+		// Ojo al createdAt
 	}
 	static async delete() {
 
@@ -84,10 +87,11 @@ export class Schema {
 
 	// OBJECT
 	constructor(data) {
-		for (const columnName in this.constructor.config.columns) {
-			if (Object.hasOwnProperty.call(this.constructor.config.columns, columnName)) {
-				this._addColumn(columnName, this.constructor.config.columns[columnName], data[columnName]);
-				delete data[columnName];
+		for (const columnName in this.constructor.config.columnsObj) {
+			if (Object.hasOwnProperty.call(this.constructor.config.columnsObj, columnName)) {
+				const clName = columnName.camelToSnakeCase();
+				this._addColumn(columnName, this.constructor.config.columnsObj[columnName], data[clName]);
+				delete data[clName];
 			}
 		}
 		Object.defineProperty(this, `tempData`, { value: data, configurable: true });
@@ -103,12 +107,19 @@ export class Schema {
 				if(this[columnName.camelCase("_")] == this["_" + columnName.camelCase("_")])
 					continue;
 				dataDB[columnName] = this.constructor.connector.constructor.TypeFunc[this.constructor.config.columns[columnName].type].d(this[columnName.camelCase("_")]);
+				this["_" + columnName.camelCase("_")] = this[columnName.camelCase("_")];
 			}
 		}
 
-		if(Object.keys(dataDB).length > 0)
+		if(Object.keys(dataDB).length > 0) {
+			// Ojo al modifiedAt
 			await this.constructor.connector.updateElementById(dataDB, this.id);
+		}
 		return this;
+	}
+
+	async delete() {
+		delete this;
 	}
 
 
@@ -116,14 +127,17 @@ export class Schema {
 
 	_addColumn(name, descriptor, value) {
 		const isPK = typeof descriptor.pk == "number" ? true : false;
+		console.log(value);
 		value = this.constructor.connector.constructor.TypeFunc[descriptor.type].o(value);
+		console.log(value);
+		console.log("----------");
 
-		Object.defineProperty(this, name.camelCase("_"), { value, writable: !isPK, enumerable: true });
+		Object.defineProperty(this, name, { value, writable: !isPK, enumerable: true });
 		if(isPK)
-			Object.defineProperty(this, `pk`, { get: function() { return this[name.camelCase("_")] } });
+			Object.defineProperty(this, `pk`, { get: function() { return this[name] } });
 		else {
-			Object.defineProperty(this, "_" + name.camelCase("_"), { value, writable: !isPK, enumerable: false });
-			Object.defineProperty(this, "set" + name.camelCase("_", false), { value: function(value) {
+			Object.defineProperty(this, "_" + name, { value, writable: !isPK, enumerable: false });
+			Object.defineProperty(this, "set" + name.charAt(0).toUpperCase() + name.slice(1), { value: function(value) {
 				if(isNullable(value)) {
 					if(!isNullable(descriptor.default))
 						value = typeof descriptor.default == "function" ? descriptor.default.bind(this)() : descriptor.default;
@@ -141,7 +155,7 @@ export class Schema {
 				if(descriptor.type == Type.STRING && descriptor.size < value.length)
 					throw new Error("Tamaño excedido");
 				
-				this[name.camelCase("_")] = value;
+				this[name] = value;
 				return this;
 			} });
 		}
@@ -158,7 +172,6 @@ export class Schema {
 		for (const fg of this.constructor.config.fg) {
 			if(fg.required && isNullable(this.tempData[fg.model.fgName()]))
 				throw new Error(`Falta el valor de una clave foranea: ${fg.model.fgName()}`);
-
 
 			var value = null;
 			if(def.hasOwnProperty(fg.model.fgName()))
@@ -196,6 +209,7 @@ export class Schema {
 				Object.defineProperty(this, dpFg.model.name.toLowerCase(), {
 					value,
 					enumerable: true,
+					writable: true,
 				});
 			}
 			else if(dpFg.type == TypeFG.ManyToOne) {

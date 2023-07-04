@@ -18,14 +18,15 @@ try {
 		}
 	});
 
-	const user = await User.get(2);
-	user
-		.setBlock(true)
-		.setDisplayname("displayed2");
-	await user.save();
+	var user = await User.get(2);
+	var dir = user.direccion;
+
+
+	user.direccion = null;
+	//delete user.direccion
+
 	console.log(user);
-	console.log("||||||||||||||||||||||||");
-	console.log("||||||||||||||||||||||||");
+	console.log(dir);
 	console.log("||||||||||||||||||||||||");
 	//const dir = await Direccion.get(11);
 	//console.log(dir);

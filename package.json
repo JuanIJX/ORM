@@ -5,10 +5,10 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test:dev": "nodemon --watch ./src --watch ./test --ignore '*.map' --exec npm test",
-    "test": "node ./test/index.js",
-    "babeltest:dev": "nodemon --watch ./src --watch ./test --ignore '*.map' --exec npm babeltest",
-    "babeltest": "babel-node ./test/index.js"
+    "test:dev": "nodemon --watch ./src --watch ./example --ignore '*.map' --exec npm test",
+    "test": "node ./example/index.js",
+    "babeltest:dev": "nodemon --watch ./src --watch ./example --ignore '*.map' --exec npm babeltest",
+    "babeltest": "babel-node ./example/index.js"
   },
   "repository": {
     "type": "git",
