@@ -12,16 +12,16 @@ npm install @ijx/orm
 
 ### Example Load
 ```javascript
-import ORM, { Connector } from "../src/index.js"
+import ORM, { Connector } from "@ijx/orm"
 
 await ORM.addEntities([ User ]).init({
 		db: {
 			conn: Connector.MYSQL,
-			host: "m1.ijx.es",
+			host: "localhost",
 			port: 3306,
-			user: "test",
-			pass: "test",
-			name: "test",
+			user: "user",
+			pass: "password",
+			name: "dbname",
 			pref: "cig_"
 		}
 	});
@@ -29,7 +29,7 @@ await ORM.addEntities([ User ]).init({
 
 ### Example model
 ```javascript
-import { Schema, Type, TypePK } from "../../src/index.js"
+import { Schema, Type, TypePK } from "@ijx/orm"
 export default class User extends Schema {
 	static config = {
 		columns: {
