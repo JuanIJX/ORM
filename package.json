@@ -6,9 +6,7 @@
   "type": "module",
   "scripts": {
     "test:dev": "nodemon --watch ./src --watch ./example --ignore '*.map' --exec npm test",
-    "test": "node ./example/index.js",
-    "babeltest:dev": "nodemon --watch ./src --watch ./example --ignore '*.map' --exec npm babeltest",
-    "babeltest": "babel-node ./example/index.js"
+    "test": "node ./example/index.js"
   },
   "repository": {
     "type": "git",
@@ -26,10 +24,6 @@
   },
   "homepage": "https://github.com/JuanIJX/ORM#readme",
   "devDependencies": {
-    "@babel/cli": "^7.22.5",
-    "@babel/core": "^7.22.5",
-    "@babel/node": "^7.22.5",
-    "@babel/preset-env": "^7.22.5",
     "nodemon": "^2.0.22"
   },
   "dependencies": {
