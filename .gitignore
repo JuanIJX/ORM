@@ -59,4 +59,5 @@ build/
 test
 
 # ignore package-lock.json, yarn.lock, ...
-*.lock
+package-lock.json
+yarn.lock
