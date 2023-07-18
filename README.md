@@ -15,16 +15,16 @@ npm install @ijx/orm
 import ORM, { Connector } from "@ijx/orm"
 
 await ORM.addEntities([ User ]).init({
-		db: {
-			conn: Connector.MYSQL,
-			host: "localhost",
-			port: 3306,
-			user: "user",
-			pass: "password",
-			name: "dbname",
-			pref: "cig_"
-		}
-	});
+	db: {
+		conn: Connector.MYSQL,
+		host: "localhost",
+		port: 3306,
+		user: "user",
+		pass: "password",
+		name: "dbname",
+		pref: "cig_"
+	}
+});
 ```
 
 ### Example model
