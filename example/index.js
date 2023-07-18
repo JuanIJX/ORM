@@ -18,16 +18,30 @@ try {
 		}
 	});
 
-	var user = await User.get(2);
-	var dir = user.direccion;
+	/*
+	Ejemplo de Mysql ResultSetHeader {
+		fieldCount: 0,
+		affectedRows: 1,
+		insertId: 0,
+		info: 'Rows matched: 1  Changed: 1  Warnings: 0',
+		serverStatus: 2,
+		warningStatus: 0,
+		changedRows: 1
+	}
+	*/
 
+	console.log(await Session.add({
+		token: "18721781892",
+	}));
 
-	user.direccion = null;
-	//delete user.direccion
+	//console.log(await Direccion.delete(11))
 
-	console.log(user);
-	console.log(dir);
-	console.log("||||||||||||||||||||||||");
+	//var user = await User.get(2);
+	//var dir = user.direccion;
+
+	//console.log(user);
+	//console.log(dir);
+	//console.log("||||||||||||||||||||||||");
 	//const dir = await Direccion.get(11);
 	//console.log(dir);
 

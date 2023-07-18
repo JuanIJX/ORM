@@ -31,6 +31,7 @@ export class DBConnector {
 	static async sendCommand(query, params) { return await this.idbd.query(query, params); }
 
 
+
 	// Abstract functions
 
 	/**
@@ -50,34 +51,23 @@ export class DBConnector {
 	static async tableToObject(table) { return {}; }
 
 
+
 	// Abstract functions repository
 
 	/**
 	 * ABSTRACT
-	 * Obtiene un array con todos los objetos
-	 * [SELECT columns], table, [ORDER columns]
+	 * Obtiene una lista de objetos en base a ciertas restricciones
 	 * 
-	 * @param table Nombre de la tabla
-	 * @param selects Array con columnas para el SELECT o *
-	 * @param orders Array con columnas para el ORDER
-	 * @param order (default true) Si es true se utilizara ASC en el ORDER
+	 * @param {string} table Nombre de la tabla
+	 * @param {array|null} selects Lista de columnas o *
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {array} orders Lista de columnas para ordenar
+	 * @param {boolean} order True para ascendente o false para descendente
+	 * @param {number|null} limit Cantidad de datos que se van a entregar
+	 * @param {number} offset Índice de comienzo para empezar a listar
 	 * @returns Array de objetos
 	 */
-	static async getAllElements(table, selects="*", orders=null, order=true) { return []; }
-	/**
-	 * ABSTRACT
-	 * Obtiene un array con los objetos indicados mediante paginación
-	 * [SELECT columns], table, [ORDER columns], limit, offset
-	 * 
-	 * @param table Nombre de la tabla
-	 * @param selects Array con columnas para el SELECT o *
-	 * @param orders Array con columnas para el ORDER
-	 * @param tam Tamaño de pagina
-	 * @param pag Numero de pagina
-	 * @param order (default true) Si es true se utilizara ASC en el ORDER
-	 * @returns Array de objetos
-	 */
-	static async getRangeElements(table, selects, tam, pag, orders=null, order=true) { return []; }
+	static async getElements(table, selects=null, where={}, orders=[], order=true, limit=null, offset=0) { return []; }
 	/**
 	 * ABSTRACT
 	 * Obtiene un elemento por su ID
@@ -115,20 +105,11 @@ export class DBConnector {
 	 * @param data Nuevos datos
 	 * @param pkName Nombre de la ID
 	 * @param id Valor de la ID
-	 * @returns Ejemplo de Mysql ResultSetHeader {
-		fieldCount: 0,
-		affectedRows: 1,
-		insertId: 0,
-		info: 'Rows matched: 1  Changed: 1  Warnings: 0',
-		serverStatus: 2,
-		warningStatus: 0,
-		changedRows: 1
-	}
+	 * @returns 
 	 */
 	static async updateElementById(table, data, pkName, id) { return {}; }
-
 	/**
-	 * ABSTRACT
+	 * ABSTRACT (falta estandarizar la salida)
 	 * Elimina un elemento por su ID
 	 * [table, id key, id value]
 	 * 
@@ -137,7 +118,63 @@ export class DBConnector {
 	 * @param id Valor de la ID
 	 */
 	static async deleteElementById(table, pkName, id) { return {}; }
-
+	/**
+	 * ABSTRACT (falta estandarizar la salida)
+	 * Elimina un conjunto de elementos
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {string} column Nombre de la columna de filtrado
+	 * @param {number|null} limit Cantidad de datos que se van a eliminar
+	 * @param {number} offset Índice de comienzo para empezar a eliminar
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns 
+	 */
+	static async deleteRange(table, column=null, limit=null, offset=0, where={}) { return {}; }
+	/**
+	 * ABSTRACT (falta estandarizar la salida)
+	 * Devuelve el total de elementos
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns Numero con el valor del total
+	 */
+	static async count(table, where={}) { return 0; }
+	/**
+	 * ABSTRACT
+	 * Devuelve el valor máximo de una columna
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns Numero con el valor máximo
+	 */
+	static async max(table, column, where={}) { return 0; }
+	/**
+	 * ABSTRACT
+	 * Devuelve el valor mínimo de una columna
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns Numero con el valor mínimo
+	 */
+	static async min(table, column, where={}) { return 0; }
+	/**
+	 * ABSTRACT
+	 * Devuelve la suma de una columna
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns Numero con el valor de la suma
+	 */
+	static async sum(table, column, where={}) { return 0; }
+	/**
+	 * ABSTRACT
+	 * Devuelve la media de una columna
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @returns Numero con el valor de la media
+	 */
+	static async avg(table, column, where={}) { return 0; }
 
 
 
@@ -188,12 +225,18 @@ export class DBConnector {
 	addCommand(name, func) { return Object.defineProperty(this, name, { value : func, enumerable: true }); }
 
 	// Functions repository (resumido)
-	async getAllElements(selects="*", orders=null, order=true) { return await this.constructor.getAllElements(this.table, selects, orders, order); }
-	async getRangeElements( selects, tam, pag, orders, order=true) { return await this.constructor.getRangeElements(this.table, selects, tam, pag, orders, order=true); }
-	async getElementById(id) { return await this.constructor.getElementById(this.table, this.pkName, id); }
-	async addElement(data) { return await this.constructor.addElement(this.table, data); }
-	async updateElementById(data, id) { return await this.constructor.updateElementById(this.table, data, this.pkName, id); }
+	async getElements(selects=null, where={}, orders=[], order=true, limit=null, offset=0) { return this.constructor.getElements(this.table, selects, where, orders, order, limit, offset); }
+	async getElementById(id) { return this.constructor.getElementById(this.table, this.pkName, id); }
+	async addElement(data) { return this.constructor.addElement(this.table, data); }
+	async updateElementById(data, id) { return this.constructor.updateElementById(this.table, data, this.pkName, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
+	async deleteRange(column=null, limit=null, offset=0, where={}) { return this.constructor.deleteRange(this.table, column, limit, offset, where); }
+	async count(where={}) { return this.constructor.count(this.table, where); }
+	async max(column, where={}) { return this.constructor.max(this.table, column, where); }
+	async min(column, where={}) { return this.constructor.min(this.table, column, where); }
+	async sum(column, where={}) { return this.constructor.sum(this.table, column, where); }
+	async avg(column, where={}) { return this.constructor.avg(this.table, column, where); }
+
 
 
 

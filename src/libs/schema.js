@@ -2,7 +2,9 @@
 
 import { Type, TypeFunc } from "../types/db-type.js";
 import { TypeFG } from "../types/fg-type.js";
+import { TypePK } from "../types/pk-type.js";
 import { isNullable } from "../utils/utils.js";
+import { newError } from "./error.js";
 import List from "./list-schema.js";
 
 export class Schema {
@@ -10,9 +12,8 @@ export class Schema {
 	static connector = null;
 
 	// Column name ID
-	static fgName() {
-		return this.name.toLowerCase() + "_id";
-	}
+	static fgName() { return this.name.camelToSnakeCase().slice(1) + "_id"; }
+	static attrName() { return this.name[0].toLowerCase() + this.name.slice(1); }
 
 	// Config
 	static config = {};
@@ -30,8 +31,10 @@ export class Schema {
 		// Save pk name and copy config.columns
 		for (const columnName in this.config.columns) {
 			if (Object.hasOwnProperty.call(this.config.columns, columnName)) {
-				if(typeof this.config.columns[columnName].pk == "number")
+				if(typeof this.config.columns[columnName].pk == "number") {
 					this.config.pkName = columnName;
+					this.config.pkType = this.config.columns[columnName].pk;
+				}
 				this.config.columnsObj[columnName.camelCase("_")] = this.config.columns[columnName];
 			}
 		}
@@ -46,6 +49,45 @@ export class Schema {
 		}
 
 		await this.connector.load();
+	}
+
+	// Validate add data columns
+	static _validateData(data) {
+		const dataVal = {};
+
+		for (const key in this.config.columns) {
+			const descriptor = this.config.columns[key];
+
+			if(!data.hasOwnProperty(key)) {
+				if(typeof descriptor.pk == "number") {
+					if(descriptor.pk != TypePK.AUTO)
+						throw newError(`(${key}) Falta la clave primaria`);
+				}
+				else if(!isNullable(descriptor.default))
+					dataVal[key] = this.connector.constructor.TypeFunc[descriptor.type].d(typeof descriptor.default == "function" ? descriptor.default.bind(this)() : descriptor.default);
+				else if(descriptor.required)
+					throw new Error(`(${key}) Valor requerido`);
+				else
+					dataVal[key] = null;
+			}
+			else {
+				if(this.config.createdAt && key == "created_at")
+					throw new Error(`No se puede introducir una fecha de creación`);
+				if(this.config.modifiedAt && key == "modified_at")
+					throw new Error(`No se puede introducir una fecha de modificación`);
+
+				if(!TypeFunc[descriptor.type](data[key]))
+					throw new Error(`(${key}) Tipo inválido`);
+				else if(Array.isArray(descriptor.values) && !descriptor.values.includes(data[key]))
+					throw new Error(`(${key}) Valor no encontrado en values`);
+
+				if(descriptor.type == Type.STRING && descriptor.size < data[key].length)
+					throw new Error(`(${key}) Tamaño excedido`);
+
+				dataVal[key] = this.connector.constructor.TypeFunc[4].d(data[key]);
+			}
+		}
+		return dataVal;
 	}
 
 
@@ -67,20 +109,26 @@ export class Schema {
 			return null;
 		return await this._getObj(dataDB)._load();
 	}
-	static async getAll(index=0, limit=null) {
-
+	static async getAll(limit=null, offset=0) {
+		const dataDB = await this.connector.getElements(null, {}, orders=[], true, limit, offset);
 	}
 	static async add(data) {
-		// Ojo al createdAt
-	}
-	static async delete() {
+		data = this._validateData(data);
+		const lastID = await this.connector.addElement(data);
+		if(this.config.pkType == TypePK.AUTO)
+			data[this.config.pkName] = lastID;
 
+		return this._getObj(data);
 	}
-	static async deleteAll(index=0, limit=null) {
-
+	// ALERTA
+	static async delete(id) {
+		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1; // ALERTA, cada deleteElement segun el conector puede devolver algo diferente
+	}
+	static async deleteAll(column=null, limit=null, offset=0, where={}) {
+		return await this.connector.deleteRange(column, limit, offset, where);
 	}
 	static async getSize() {
-
+		return await this.connector.count();
 	}
 
 
@@ -119,18 +167,16 @@ export class Schema {
 	}
 
 	async delete() {
-		delete this;
+		await this.constructor.connector.deleteElementById(this.id);
+		for (const fg of this.constructor.config.fg)
+			this[fg.model.name.toLowerCase()][this.constructor.name.toLowerCase()] = null;
 	}
 
 
 	// Private functions
-
 	_addColumn(name, descriptor, value) {
 		const isPK = typeof descriptor.pk == "number" ? true : false;
-		console.log(value);
 		value = this.constructor.connector.constructor.TypeFunc[descriptor.type].o(value);
-		console.log(value);
-		console.log("----------");
 
 		Object.defineProperty(this, name, { value, writable: !isPK, enumerable: true });
 		if(isPK)
@@ -168,7 +214,6 @@ export class Schema {
 	}
 
 	async _loadFg(def = {}) {
-		//console.log(this.tempData);
 		for (const fg of this.constructor.config.fg) {
 			if(fg.required && isNullable(this.tempData[fg.model.fgName()]))
 				throw new Error(`Falta el valor de una clave foranea: ${fg.model.fgName()}`);
@@ -181,14 +226,10 @@ export class Schema {
 				value = !dataDB ? null : fg.model._getObj(dataDB);
 				await value._loadFg();
 				await value._loadDpFg({
-					[this.constructor.name.toLowerCase()]: this
+					[this.constructor.attrName()]: this
 				});
 			}
-
-			Object.defineProperty(this, fg.model.name.toLowerCase(), {
-				value,
-				enumerable: true
-			});
+			this[fg.model.attrName()] = value;
 		}
 		delete this.tempData;
 		return this;
@@ -198,26 +239,22 @@ export class Schema {
 		for (const dpFg of this.constructor.config.dpFg) {
 			if(dpFg.type == TypeFG.OneToOne) {
 				var value = null;
-				if(def.hasOwnProperty(dpFg.model.name.toLowerCase()))
-					value = def[dpFg.model.name.toLowerCase()];
+				if(def.hasOwnProperty(dpFg.model.attrName()))
+					value = def[dpFg.model.attrName()];
 				else {
 					const dataDB = await dpFg.model.connector.constructor.getElementById(dpFg.model.connector.table, this.constructor.fgName(), this.pk);
-					var value = !dataDB ? null : dpFg.model._getObj(dataDB);
-					await value._loadFg({ [this.constructor.fgName()]: this });
-					await value._loadDpFg();
+					if(dataDB) {
+						value = dpFg.model._getObj(dataDB);
+						await value._loadFg({ [this.constructor.fgName()]: this });
+						await value._loadDpFg();
+					}
+					else
+						value = "null";
 				}
-				Object.defineProperty(this, dpFg.model.name.toLowerCase(), {
-					value,
-					enumerable: true,
-					writable: true,
-				});
+				this[dpFg.model.attrName()] = value;
 			}
-			else if(dpFg.type == TypeFG.ManyToOne) {
-				Object.defineProperty(this, dpFg.model.name.toLowerCase() + "List", {
-					value: new List(this, dpFg.model),
-					enumerable: true,
-				});
-			}
+			else if(dpFg.type == TypeFG.ManyToOne)
+				Object.defineProperty(this, dpFg.model.attrName() + "List", { value: new List(this, dpFg.model), enumerable: true, });
 		}
 		return this;
 	}

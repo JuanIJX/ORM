@@ -140,10 +140,21 @@ export class MysqlConnector extends DBConnector {
 		return obj;
 	};
 
-	static async getAllElements(table, selects="*", orders=null, order=true) { return await this.idbd.rows(`SELECT ?? FROM ??${orders!=null ? ` ORDER BY ` + orders.join(", ") + (order ? "ASC": "DESC") : ``}`, [selects, table]); }
-	static async getRangeElements(table, selects, tam, pag, orders=null, order=true) { return await this.idbd.rows(`SELECT ?? FROM ??${orders!=null ? ` ORDER BY ` + orders.join(", ") + (order ? "ASC": "DESC") : ``} LIMIT ? OFFSET ?`, [selects, table, orders, tam, pag * tam]); }
+	// Abstract functions repository
+	static async getElements(table, selects=null, where={}, orders=[], order=true, limit=null, offset=0) {
+		return await this.idbd.rows([
+			`SELECT`,
+				selects === null ? `*` : selects
+					.map(column => `${table}.${column}`)
+					.join(", "),
+			`FROM ${table}`,
+			Object.keys(where).length > 0 ? "WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : "",
+			orders.length > 0 ? "ORDER BY " + orders.join(", ") + ` ${order ? "ASC" : "DESC"}` : "",
+			limit!=null ? `LIMIT ${offset}, ${limit}` : ``
+		].join(" "), Object.values(where));
+	}
 	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?`, [table, pkName, id]); }
-	static async addElement(table, data) { return await this.idbd.execute(`INSERT INTO ?? SET ?`, [table, data]); }
+	static async addElement(table, data) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")}`, Object.values(data)))[0].insertId; }
 	static async updateElementById(table, data, pkName, id) {
 		const values = [];
 		const campos = [];
@@ -154,9 +165,32 @@ export class MysqlConnector extends DBConnector {
 		values.push(id);
 		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?`, values);
 	}
-	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ?? WHERE ?? = ?`, [table, pkName, id]); }
+	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?`, [id]); }
+	static async deleteRange(table, column=null, limit=null, offset=0, where={}) {
+		return await this.idbd.execute([
+			`DELETE FROM ${table}`,
+			column!=null && limit!=null ? [
+				`WHERE ${column} IN (`,
+					`SELECT * FROM (`,
+						`SELECT ${column}`,
+						`FROM ${table}`,
+						Object.keys(where).length > 0 ? "WHERE " + Object.keys(where)
+							.map(key => `${key} = ?`)
+							.join(" AND ") : "",
+						`LIMIT ${offset}, ${limit}`,
+					`) as tab`,
+				`)`,
+			].join(" ") : "",
+		].join(" ") + ";", Object.values(where));
+	}
+	static async count(table, where={}) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${Object.keys(where).length > 0 ? " WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : ""};`, Object.values(where))).re); }
+	static async max(table, column, where={}) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${Object.keys(where).length > 0 ? " WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : ""};`, Object.values(where))).re); }
+	static async min(table, column, where={}) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MIN(${column}), 0) as re FROM ${table}${Object.keys(where).length > 0 ? " WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : ""};`, Object.values(where))).re); }
+	static async sum(table, column, where={}) { return parseFloat((await this.idbd.row(`SELECT IFNULL(SUM(${column}), 0) as re FROM ${table}${Object.keys(where).length > 0 ? " WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : ""};`, Object.values(where))).re); }
+	static async avg(table, column, where={}) { return parseFloat((await this.idbd.row(`SELECT IFNULL(AVG(${column}), 0) as re FROM ${table}${Object.keys(where).length > 0 ? " WHERE " + Object.keys(where).map(key => `${key} = ?`).join(" AND ") : ""};`, Object.values(where))).re); }
 
 
+	// Object
 	constructor(idbd, schemaConfig) {
 		super(idbd, schemaConfig);
 	}

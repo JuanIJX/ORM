@@ -149,6 +149,10 @@ const validateConfig = config => {
 				throw newError(`fg[${0}] no existe model`);
 			if(fg.model.prototype instanceof Schema == false)
 				throw newError(`fg[${0}] debe extender de Schema`);
+
+			// Column conflict
+			if(config.columns.hasOwnProperty(fg.model.fgName()))
+				throw newError(`fg[${0}] entra en conflicto con ${fg.model.fgName()}`);
 			
 			// Type
 			if(isNullable(fg.type))

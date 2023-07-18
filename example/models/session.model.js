@@ -3,7 +3,6 @@ import User from "./user.model.js"
 
 export default class Session extends Schema {
 	static config = {
-		pk: "token",
 		columns: {
 			token: { type: Type.STRING, size: 64, pk: TypePK.NONE },
 			name: { type: Type.STRING },
