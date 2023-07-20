@@ -56,7 +56,10 @@ Thumbs.db
 # Ignore built ts files
 dist/
 build/
-test
+
+# test
+test/
+test.js
 
 # ignore package-lock.json, yarn.lock, ...
 package-lock.json
