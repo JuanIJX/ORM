@@ -96,18 +96,23 @@ export class Schema {
 		return new this(dataDB);
 	}
 
-	static async get(id) {
-		const dataDB = await this.connector.getElementById(id);
-		if(!dataDB)
+	static async get(id, load=true) {
+		let data = await this.connector.getElementById(id);
+		if(!data)
 			return null;
-		
-		return await this._getObj(dataDB)._load();
+		data = this._getObj(data);
+		if(!load)
+			return data;
+		return await data._load();
 	}
-	static async getBy(key, id) {
-		const dataDB = await this.connector.constructor.getElementById(this.connector.table, key, id);
-		if(!dataDB)
+	static async getBy(key, id, load=true) {
+		let data = await this.connector.constructor.getElementById(this.connector.table, key, id);
+		if(!data)
 			return null;
-		return await this._getObj(dataDB)._load();
+		data = this._getObj(data);
+		if(!load)
+			return data;
+		return await data._load();
 	}
 	static async getAll(limit=null, offset=0) {
 		const dataDB = await this.connector.getElements(null, {}, orders=[], true, limit, offset);
@@ -127,8 +132,8 @@ export class Schema {
 	static async deleteAll(column=null, limit=null, offset=0, where={}) {
 		return await this.connector.deleteRange(column, limit, offset, where);
 	}
-	static async getSize() {
-		return await this.connector.count();
+	static async getSize(where={}) {
+		return await this.connector.count(where);
 	}
 
 
