@@ -132,7 +132,7 @@ export class Schema {
 	static async deleteAll(column=null, limit=null, offset=0, where={}) {
 		return await this.connector.deleteRange(column, limit, offset, where);
 	}
-	static async getSize(where={}) {
+	static async count(where={}) {
 		return await this.connector.count(where);
 	}
 
