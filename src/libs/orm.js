@@ -38,7 +38,7 @@ export class ORM {
 	}
 
 	static async close() {
-		await this._conn.close();
+		await this._conn?.close();
 	}
 
 	static async _load() {
