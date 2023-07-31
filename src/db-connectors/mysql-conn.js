@@ -167,20 +167,21 @@ export class MysqlConnector extends DBConnector {
 		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?`, values);
 	}
 	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?`, [id]); }
-	static async deleteRange(table, column=null, limit=null, offset=0, where=null) {
-		return await this.idbd.execute([
-			`DELETE FROM ${table}`,
-			column!=null && limit!=null ? [
-				`WHERE ${column} IN (`,
-					`SELECT * FROM (`,
-						`SELECT ${column}`,
-						`FROM ${table}`,
-						(where instanceof Where) ? "WHERE " + where.print() : "",
-						`LIMIT ${offset}, ${limit}`,
-					`) as tab`,
-				`)`,
-			].join(" ") : "",
-		].join(" ") + ";", where?.values() ?? []);
+	static async deleteRange(table, column=null, where=null, limit=null, offset=0) {
+		if(limit!=null)
+			return await this.idbd.execute(`DELETE FROM ${table}` + (
+				column!=null && (limit!=null || where!=null) ? [
+					` WHERE ${column} IN (`,
+						"\t" + `SELECT * FROM (`,
+							"\t\t" + `SELECT ${column}`,
+							"\t\t" + `FROM ${table}`,
+							"\t\t" + ((where instanceof Where) ? "WHERE " + where.print() : ""),
+							"\t\t" + `LIMIT ${offset}, ${limit}`,
+						"\t" + `) as tab`,
+					`)`,
+				].join("\n") : ""
+			) + ";", where?.values() ?? []);
+		return await this.idbd.execute(`DELETE FROM ${table}` + ((where instanceof Where) ? ` WHERE ${where.print()}` : "") + ";", where?.values() ?? []);
 	}
 	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where instanceof Where) ? " WHERE " + where.print() : ""};`, where?.values() ?? [])).re); }
 	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where instanceof Where) ? " WHERE " + where.print() : ""};`, where?.values() ?? [])).re); }
