@@ -172,12 +172,12 @@ export class MysqlConnector extends DBConnector {
 			return await this.idbd.execute(`DELETE FROM ${table}` + (
 				column!=null && (limit!=null || where!=null) ? [
 					` WHERE ${column} IN (`,
-						"\t" + `SELECT * FROM (`,
-							"\t\t" + `SELECT ${column}`,
-							"\t\t" + `FROM ${table}`,
-							"\t\t" + ((where instanceof Where) ? "WHERE " + where.print() : ""),
-							"\t\t" + `LIMIT ${offset}, ${limit}`,
-						"\t" + `) as tab`,
+						`SELECT * FROM (`,
+							`SELECT ${column}`,
+							`FROM ${table}`,
+							(where instanceof Where) ? "WHERE " + where.print() : "",
+							`LIMIT ${offset}, ${limit}`,
+						`) as tab`,
 					`)`,
 				].join("\n") : ""
 			) + ";", where?.values() ?? []);
