@@ -225,17 +225,17 @@ export class DBConnector {
 	addCommand(name, func) { return Object.defineProperty(this, name, { value : func, enumerable: true }); }
 
 	// Functions repository (resumido)
-	async getElements(selects=null, where={}, orders=[], order=true, limit=null, offset=0) { return this.constructor.getElements(this.table, selects, where, orders, order, limit, offset); }
+	async getElements(selects=null, where=null, orders=[], order=true, limit=null, offset=0) { return this.constructor.getElements(this.table, selects, where, orders, order, limit, offset); }
 	async getElementById(id) { return this.constructor.getElementById(this.table, this.pkName, id); }
 	async addElement(data) { return this.constructor.addElement(this.table, data); }
 	async updateElementById(data, id) { return this.constructor.updateElementById(this.table, data, this.pkName, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
-	async deleteRange(column=null, limit=null, offset=0, where={}) { return this.constructor.deleteRange(this.table, column, limit, offset, where); }
-	async count(where={}) { return this.constructor.count(this.table, where); }
-	async max(column, where={}) { return this.constructor.max(this.table, column, where); }
-	async min(column, where={}) { return this.constructor.min(this.table, column, where); }
-	async sum(column, where={}) { return this.constructor.sum(this.table, column, where); }
-	async avg(column, where={}) { return this.constructor.avg(this.table, column, where); }
+	async deleteRange(limit=null, offset=0, where=null) { return this.constructor.deleteRange(this.table, this.schemaConfig.pkName, limit, offset, where); }
+	async count(where=null) { return this.constructor.count(this.table, where); }
+	async max(column, where=null) { return this.constructor.max(this.table, column, where); }
+	async min(column, where=null) { return this.constructor.min(this.table, column, where); }
+	async sum(column, where=null) { return this.constructor.sum(this.table, column, where); }
+	async avg(column, where=null) { return this.constructor.avg(this.table, column, where); }
 
 
 
