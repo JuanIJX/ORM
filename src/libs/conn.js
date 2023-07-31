@@ -1,5 +1,43 @@
 import { validateDbConfig } from "../utils/validations.js";
 
+export class Where {
+	static AND = (...cmps) => new this("AND", cmps);
+	static OR = (...cmps) => new this("OR", cmps);
+
+	constructor(operator, cmps) {
+		this.operator = operator;
+		this.cmps = cmps;
+	}
+
+	values() {
+		const ret = [];
+		for (const c of this.cmps)
+			c instanceof Cmp ? ret.push(c.value) : ret.push(...c.values());
+		return ret;
+	}
+
+	print() { return "(" + this.cmps.map(c => c.print()).join(` ${this.operator} `) + ")"; }
+}
+
+export class Cmp {
+	static _cmpList = { eq: "=", ne: "!=", gt: ">", ge: ">=", lt: "<", le: "<=", };
+
+	static EQ = (column, value) => new this("eq", column, value); // ==
+	static NE = (column, value) => new this("ne", column, value); // !=
+	static GT = (column, value) => new this("gt", column, value); // >
+	static GE = (column, value) => new this("ge", column, value); // >=
+	static LT = (column, value) => new this("lt", column, value); // <
+	static LE = (column, value) => new this("le", column, value); // <=
+
+	constructor(cp, column, value) {
+		this.cp = cp;
+		this.column = column;
+		this.value = value;
+	}
+
+	print() { return `${this.column} ${this.constructor._cmpList[this.cp]} ?`; }
+}
+
 export class DBConnector {
 	static idbd = null;
 	static _tables = [];
@@ -60,14 +98,14 @@ export class DBConnector {
 	 * 
 	 * @param {string} table Nombre de la tabla
 	 * @param {array|null} selects Lista de columnas o *
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @param {array} orders Lista de columnas para ordenar
 	 * @param {boolean} order True para ascendente o false para descendente
 	 * @param {number|null} limit Cantidad de datos que se van a entregar
 	 * @param {number} offset Índice de comienzo para empezar a listar
 	 * @returns Array de objetos
 	 */
-	static async getElements(table, selects=null, where={}, orders=[], order=true, limit=null, offset=0) { return []; }
+	static async getElements(table, selects=null, where=null, orders=[], order=true, limit=null, offset=0) { return []; }
 	/**
 	 * ABSTRACT
 	 * Obtiene un elemento por su ID
@@ -126,55 +164,55 @@ export class DBConnector {
 	 * @param {string} column Nombre de la columna de filtrado
 	 * @param {number|null} limit Cantidad de datos que se van a eliminar
 	 * @param {number} offset Índice de comienzo para empezar a eliminar
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns 
 	 */
-	static async deleteRange(table, column=null, limit=null, offset=0, where={}) { return {}; }
+	static async deleteRange(table, column=null, limit=null, offset=0, where=null) { return {}; }
 	/**
 	 * ABSTRACT (falta estandarizar la salida)
 	 * Devuelve el total de elementos
 	 * 
 	 * @param {string} table Nombre de la tabla
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns Numero con el valor del total
 	 */
-	static async count(table, where={}) { return 0; }
+	static async count(table, where=null) { return 0; }
 	/**
 	 * ABSTRACT
 	 * Devuelve el valor máximo de una columna
 	 * 
 	 * @param {string} table Nombre de la tabla
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns Numero con el valor máximo
 	 */
-	static async max(table, column, where={}) { return 0; }
+	static async max(table, column, where=null) { return 0; }
 	/**
 	 * ABSTRACT
 	 * Devuelve el valor mínimo de una columna
 	 * 
 	 * @param {string} table Nombre de la tabla
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns Numero con el valor mínimo
 	 */
-	static async min(table, column, where={}) { return 0; }
+	static async min(table, column, where=null) { return 0; }
 	/**
 	 * ABSTRACT
 	 * Devuelve la suma de una columna
 	 * 
 	 * @param {string} table Nombre de la tabla
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns Numero con el valor de la suma
 	 */
-	static async sum(table, column, where={}) { return 0; }
+	static async sum(table, column, where=null) { return 0; }
 	/**
 	 * ABSTRACT
 	 * Devuelve la media de una columna
 	 * 
 	 * @param {string} table Nombre de la tabla
-	 * @param {object} where Objeto con las restricciones { id: 3, column2: "a" }
+	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns Numero con el valor de la media
 	 */
-	static async avg(table, column, where={}) { return 0; }
+	static async avg(table, column, where=null) { return 0; }
 
 
 
