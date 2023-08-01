@@ -125,14 +125,14 @@ export class Schema {
 
 		return this._getObj(data);
 	}
-	// ALERTA
+	// ALERTA, cada deleteElement segun el conector puede devolver algo diferente
 	static async delete(id) {
-		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1; // ALERTA, cada deleteElement segun el conector puede devolver algo diferente
+		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1;
 	}
-	static async deleteAll(column=null, limit=null, offset=0, where={}) {
-		return await this.connector.deleteRange(column, limit, offset, where);
+	static async deleteAll(where=null, limit=null, offset=0) {
+		return await this.connector.deleteRange(where, limit, offset);
 	}
-	static async count(where={}) {
+	static async count(where=null) {
 		return await this.connector.count(where);
 	}
 
