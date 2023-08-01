@@ -188,9 +188,7 @@ export class DBConnector {
 	 */
 	constructor(schemaConfig) {
 		Object.defineProperty(this, `_schemaConfig`, { value: schemaConfig });
-
 		this.table = this.pref + this.schemaConfig.table;
-		//this.pkName = Object.entries(this.schemaConfig.columns).find(([_, value]) => typeof value.pk == "number")[0];
 	}
 
 	get idbd() { return this.constructor.idbd; }

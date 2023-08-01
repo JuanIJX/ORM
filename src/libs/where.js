@@ -7,6 +7,13 @@ export class Where {
 		this.cmps = cmps;
 	}
 
+	entries() {
+		const ret = [];
+		for (const c of this.cmps)
+			c instanceof Cmp ? ret.push([c.column, c.value]) : ret.push(...c.entries());
+		return ret;
+	}
+
 	values() {
 		const ret = [];
 		for (const c of this.cmps)
