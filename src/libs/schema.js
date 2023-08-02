@@ -114,8 +114,12 @@ export class Schema {
 			return data;
 		return await data._load();
 	}
-	static async getAll(limit=null, offset=0) {
-		const dataDB = await this.connector.getElements(null, {}, orders=[], true, limit, offset);
+	static async getAll(where=null, limit=null, offset=0) {
+		const users = [];
+		const dataDB = await this.connector.getElements(selects=null, where, ["created_at"], true, limit, offset);
+		for (const userDB of dataDB)
+			users.push(this._getObj(userDB));
+		return users;
 	}
 	static async add(data) {
 		data = this._validateData(data);
@@ -130,7 +134,7 @@ export class Schema {
 		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1;
 	}
 	static async deleteAll(where=null, limit=null, offset=0) {
-		return await this.connector.deleteRange(where, limit, offset);
+		return await this.connector.deleteElements(where, limit, offset);
 	}
 	static async count(where=null) {
 		return await this.connector.count(where);

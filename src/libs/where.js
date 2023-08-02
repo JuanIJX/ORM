@@ -40,5 +40,6 @@ export class Cmp {
 		this.value = value;
 	}
 
+	values() { return [this.value]; }
 	print() { return `${this.column} ${this.constructor._cmpList[this.cp]} ?`; }
 }

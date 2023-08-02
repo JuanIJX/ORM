@@ -129,7 +129,7 @@ export class DBConnector {
 	 * @param {Where|null} where Objeto con las restricciones
 	 * @returns 
 	 */
-	static async deleteRange(table, column=null, where=null, limit=null, offset=0) { return {}; }
+	static async deleteElements(table, column=null, where=null, limit=null, offset=0) { return {}; }
 	/**
 	 * ABSTRACT (falta estandarizar la salida)
 	 * Devuelve el total de elementos
@@ -228,7 +228,7 @@ export class DBConnector {
 	async addElement(data) { return this.constructor.addElement(this.table, data); }
 	async updateElementById(data, id) { return this.constructor.updateElementById(this.table, data, this.pkName, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
-	async deleteRange(where=null, limit=null, offset=0) { return this.constructor.deleteRange(this.table, this.schemaConfig.pkName, where, limit, offset); }
+	async deleteElements(where=null, limit=null, offset=0) { return this.constructor.deleteElements(this.table, this.schemaConfig.pkName, where, limit, offset); }
 	async count(where=null) { return this.constructor.count(this.table, where); }
 	async max(column, where=null) { return this.constructor.max(this.table, column, where); }
 	async min(column, where=null) { return this.constructor.min(this.table, column, where); }
