@@ -161,7 +161,7 @@ export class MysqlConnector extends DBConnector {
 			(where!=null) ? " WHERE " + where.print() : "" +
 			(orders != null && orders.length > 0) ? " ORDER BY " + orders.join(", ") + ` ${order ? "ASC" : "DESC"}` : "" +
 			(limit!=null) ? ` LIMIT ${offset}, ${limit}` : ""
-		, where?.values().map(v => this.constructor.TypeAuto(v)) ?? []);
+		, where?.values().map(v => this.TypeAuto(v)) ?? []);
 	}
 	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?`, [table, pkName, id]); }
 	static async addElement(table, data) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")}`, Object.values(data)))[0].insertId; }
@@ -194,14 +194,14 @@ export class MysqlConnector extends DBConnector {
 						`) as tab`,
 					`)`,
 				].join("\n") : ""
-			) + ";", where?.values().map(v => this.constructor.TypeAuto(v)) ?? []);
-		return await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.constructor.TypeAuto(v)) ?? []);
+			) + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
+		return await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
 	}
-	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.constructor.TypeAuto(v)) ?? [])).re); }
-	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.constructor.TypeAuto(v)) ?? [])).re); }
-	static async min(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MIN(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.constructor.TypeAuto(v)) ?? [])).re); }
-	static async sum(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(SUM(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.constructor.TypeAuto(v)) ?? [])).re); }
-	static async avg(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(AVG(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.constructor.TypeAuto(v)) ?? [])).re); }
+	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
+	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
+	static async min(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MIN(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
+	static async sum(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(SUM(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
+	static async avg(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(AVG(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
 
 
 	// Object
