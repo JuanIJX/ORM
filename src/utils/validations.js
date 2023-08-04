@@ -195,7 +195,7 @@ export const validateEntity = entity => {
 		validateConfig(entity.config);
 		// Table validation
 		if(!isTypeStringNotEmpty(entity.config.table))
-			entity.config.table = entity.name.toLowerCase();
+			entity.config.table = entity.name.camelToSnakeCase().slice(1);
 		if(!validateTableName(entity.config.table))
 			throw newError(`table debe ser un string válido`);
 
