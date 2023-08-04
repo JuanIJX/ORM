@@ -16,12 +16,20 @@ export class Schema {
 	static attrName() { return this.name[0].toLowerCase() + this.name.slice(1); }
 
 	// Config
-	static config = {};
+	static config = {
+		table: null,
+		createdAt: false,
+		modifiedAt: false,
+		pkName: null,
+		pkType: null,
+		pkAuto: null,
+
+		columns: {},
+		columnsObj: {},
+	};
 
 	// Load model to database
 	static async _load() {
-		this.config.columnsObj = {};
-
 		// Date columns
 		if(this.config.createdAt)
 			this.config.columns.created_at = { type: Type.DATETIME, required: true, default: () => new Date() };
@@ -31,11 +39,13 @@ export class Schema {
 		// Save pk name and copy config.columns
 		for (const columnName in this.config.columns) {
 			if (Object.hasOwnProperty.call(this.config.columns, columnName)) {
-				if(typeof this.config.columns[columnName].pk == "number") {
+				const descriptor = this.config.columns[columnName];
+				if(typeof descriptor.pk == "number") {
 					this.config.pkName = columnName;
-					this.config.pkType = this.config.columns[columnName].pk;
+					this.config.pkType = descriptor.type;
+					this.config.pkAuto = descriptor.pk;
 				}
-				this.config.columnsObj[columnName.camelCase("_")] = this.config.columns[columnName];
+				this.config.columnsObj[columnName.camelCase("_")] = descriptor;
 			}
 		}
 
@@ -87,6 +97,18 @@ export class Schema {
 				dataVal[key] = this.connector.constructor.TypeFunc[4].d(data[key]);
 			}
 		}
+
+		// Aseguramos que en add no falte las claves fg si se requieren
+		for (const fg of this.config.fg) {
+			const fgValue = data[fg.model.fgName()];
+			if(isNullable(fgValue)) {
+				if(fg.required)
+					throw new Error(`Falta la clave foránea obligatoria: ${fg.model.fgName()}`);
+			}
+			else if(!(fgValue instanceof fg.model) && !TypeFunc[fg.model.config.pkType](fgValue))
+				throw new Error(`(${fg.model.fgName()}) Tipo inválido`);
+			dataVal[fg.model.fgName()] = fgValue instanceof fg.model ? fgValue[fg.model.config.pkName] : fgValue;
+		}
 		return dataVal;
 	}
 
@@ -116,7 +138,7 @@ export class Schema {
 	}
 	static async getAll(where=null, limit=null, offset=0) {
 		const users = [];
-		const dataDB = await this.connector.getElements(selects=null, where, ["created_at"], true, limit, offset);
+		const dataDB = await this.connector.getElements(null, where, ["created_at"], true, limit, offset) ?? [];
 		for (const userDB of dataDB)
 			users.push(this._getObj(userDB));
 		return users;
@@ -124,7 +146,7 @@ export class Schema {
 	static async add(data) {
 		data = this._validateData(data);
 		const lastID = await this.connector.addElement(data);
-		if(this.config.pkType == TypePK.AUTO)
+		if(this.config.pkAuto == TypePK.AUTO)
 			data[this.config.pkName] = lastID;
 
 		return this._getObj(data);
@@ -151,7 +173,7 @@ export class Schema {
 				delete data[clName];
 			}
 		}
-		Object.defineProperty(this, `tempData`, { value: data, configurable: true });
+		Object.defineProperty(this, `fgData`, { value: data, configurable: true });
 	}
 
 	async save() {
@@ -169,14 +191,15 @@ export class Schema {
 		}
 
 		if(Object.keys(dataDB).length > 0) {
-			// Ojo al modifiedAt
-			await this.constructor.connector.updateElementById(dataDB, this.id);
+			if(this.constructor.config.modifiedAt)
+				dataDB[`modified_at`] = new Date();
+			await this.constructor.connector.updateElementById(dataDB, this._id);
 		}
 		return this;
 	}
 
 	async delete() {
-		await this.constructor.connector.deleteElementById(this.id);
+		await this.constructor.connector.deleteElementById(this._id);
 		for (const fg of this.constructor.config.fg)
 			this[fg.model.name.toLowerCase()][this.constructor.name.toLowerCase()] = null;
 	}
@@ -189,7 +212,7 @@ export class Schema {
 
 		Object.defineProperty(this, name, { value, writable: !isPK, enumerable: true });
 		if(isPK)
-			Object.defineProperty(this, `pk`, { get: function() { return this[name] } });
+			Object.defineProperty(this, `_id`, { value: this[name] });
 		else {
 			Object.defineProperty(this, "_" + name, { value, writable: !isPK, enumerable: false });
 			Object.defineProperty(this, "set" + name.charAt(0).toUpperCase() + name.slice(1), { value: function(value) {
@@ -224,23 +247,29 @@ export class Schema {
 
 	async _loadFg(def = {}) {
 		for (const fg of this.constructor.config.fg) {
-			if(fg.required && isNullable(this.tempData[fg.model.fgName()]))
-				throw new Error(`Falta el valor de una clave foranea: ${fg.model.fgName()}`);
-
 			var value = null;
 			if(def.hasOwnProperty(fg.model.fgName()))
 				value = def[fg.model.fgName()];
 			else {
-				const dataDB = await fg.model.connector.constructor.getElementById(fg.model.connector.table, fg.model.config.pkName, this.tempData[fg.model.fgName()]);
-				value = !dataDB ? null : fg.model._getObj(dataDB);
-				await value._loadFg();
-				await value._loadDpFg({
-					[this.constructor.attrName()]: this
-				});
+				if(fg.required && isNullable(this.fgData[fg.model.fgName()]))
+					throw new Error(`Falta el valor de una clave foranea (1): ${fg.model.fgName()}`);
+
+				const dataDB = await fg.model.connector.constructor.getElementById(fg.model.connector.table, fg.model.config.pkName, this.fgData[fg.model.fgName()]);
+				if(!dataDB) {
+					if(fg.required)
+						throw new Error(`Falta el valor de una clave foranea (2): ${fg.model.fgName()}`);
+				}
+				else {
+					value = fg.model._getObj(dataDB);
+					await value._loadFg();
+					await value._loadDpFg({
+						[this.constructor.attrName()]: this
+					});
+				}
 			}
 			this[fg.model.attrName()] = value;
 		}
-		delete this.tempData;
+		delete this.fgData;
 		return this;
 	}
 
@@ -251,7 +280,7 @@ export class Schema {
 				if(def.hasOwnProperty(dpFg.model.attrName()))
 					value = def[dpFg.model.attrName()];
 				else {
-					const dataDB = await dpFg.model.connector.constructor.getElementById(dpFg.model.connector.table, this.constructor.fgName(), this.pk);
+					const dataDB = await dpFg.model.connector.constructor.getElementById(dpFg.model.connector.table, this.constructor.fgName(), this._id);
 					if(dataDB) {
 						value = dpFg.model._getObj(dataDB);
 						await value._loadFg({ [this.constructor.fgName()]: this });
