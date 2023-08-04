@@ -3,7 +3,6 @@ import { DBConnector } from "../libs/conn.js";
 import { Type } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
 import { isNullable } from "../utils/utils.js";
-import { Where } from "../libs/where.js";
 
 function dbTypeParse(data) {
 	const [a, ...b] = data.split(" ");
