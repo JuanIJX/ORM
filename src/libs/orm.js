@@ -46,7 +46,7 @@ export class ORM {
 				if(model.config.fg.filter(fg => !this._models.has(fg.model)).length == 0) {
 					this._models.add(model);
 					this._modelsTemp.delete(model);
-					conn.schemas[model.config.table] = model.config;
+					this._conn.schemas[model.config.table] = model.config;
 					model.connector = new conn(model.config);
 					await model._load();
 				}
