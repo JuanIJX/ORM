@@ -90,6 +90,7 @@ export class Schema {
 				if(this.config.modifiedAt && key == "modified_at")
 					throw new Error(`No se puede introducir una fecha de modificación`);
 
+				// ALERT: Y si añadimos un null?
 				if(!TypeCheck[descriptor.type](data[key]))
 					throw new Error(`(${key}) Tipo inválido`);
 				else if(Array.isArray(descriptor.values) && !descriptor.values.includes(data[key]))
@@ -153,7 +154,6 @@ export class Schema {
 		const lastID = await this.connector.addElement(data);
 		if(this.config.pkAuto == TypePK.AUTO)
 			data[this.config.pkName] = lastID;
-
 		return this._getObj(data);
 	}
 	// ALERTA, cada deleteElement segun el conector puede devolver algo diferente
@@ -171,12 +171,11 @@ export class Schema {
 
 	// OBJECT
 	constructor(data) {
+		// Eliminar para un futuro columnsObj
 		for (const columnName in this.constructor.config.columnsObj) {
-			if (Object.hasOwnProperty.call(this.constructor.config.columnsObj, columnName)) {
-				const clName = columnName.camelToSnakeCase();
-				this._addColumn(columnName, this.constructor.config.columnsObj[columnName], data[clName]);
-				delete data[clName];
-			}
+			const clName = columnName.camelToSnakeCase();
+			this._addColumn(columnName, this.constructor.config.columnsObj[columnName], data[clName]);
+			delete data[clName];
 		}
 		Object.defineProperty(this, `fgData`, { value: data, configurable: true });
 	}
