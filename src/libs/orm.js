@@ -47,7 +47,7 @@ export class ORM {
 					this._models.add(model);
 					this._modelsTemp.delete(model);
 					this._conn.schemas[model.config.table] = model.config;
-					model.connector = new conn(model.config);
+					model.connector = new this._conn(model.config);
 					await model._load();
 				}
 			}
