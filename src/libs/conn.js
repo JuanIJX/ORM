@@ -3,6 +3,7 @@ import { validateDbConfig } from "../utils/validations.js";
 export class DBConnector {
 	static idbd = null;
 	static _tables = [];
+	static schemas = {};
 
 	/**
 	 * Conecta con la base de datos, realiza las

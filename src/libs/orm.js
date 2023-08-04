@@ -13,8 +13,6 @@ export class ORM {
 		const { conn, ...dbConfig } = config.db;
 		await conn.connect(dbConfig);
 		this._conn = conn;
-		for (const model of this._modelsTemp)
-			model.connector = new conn(model.config);
 		await this._load();
 		this._initialized = true;
 	}
@@ -48,6 +46,8 @@ export class ORM {
 				if(model.config.fg.filter(fg => !this._models.has(fg.model)).length == 0) {
 					this._models.add(model);
 					this._modelsTemp.delete(model);
+					conn.schemas[model.config.table] = model.config;
+					model.connector = new conn(model.config);
 					await model._load();
 				}
 			}
