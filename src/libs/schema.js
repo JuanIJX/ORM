@@ -17,12 +17,14 @@ export class Schema {
 
 	// Config
 	static config = {
-		table: null,
+		table: "",
 		createdAt: false,
 		modifiedAt: false,
 		pkName: null,
 		pkType: null,
 		pkAuto: null,
+		fg: [],
+		dpFg: [],
 
 		columns: {},
 		columnsObj: {},
@@ -30,6 +32,8 @@ export class Schema {
 
 	// Load model to database
 	static async _load() {
+		this.config.columnsObj = {}
+		
 		// Date columns
 		if(this.config.createdAt)
 			this.config.columns.created_at = { type: Type.DATETIME, required: true, default: () => new Date() };
