@@ -4,6 +4,7 @@ export class DBConnector {
 	static idbd = null;
 	static _tables = [];
 	static schemas = {};
+	static pref = "";
 
 	/**
 	 * Conecta con la base de datos, realiza las
@@ -14,6 +15,7 @@ export class DBConnector {
 	 */
 	static async connect(config) {
 		validateDbConfig(config);
+		this.pref = config.pref ?? "";
 		return null;
 	};
 
@@ -193,7 +195,7 @@ export class DBConnector {
 	}
 
 	get idbd() { return this.constructor.idbd; }
-	get pref() { return this.idbd.pref; }
+	get pref() { return this.constructor.pref; }
 	get schemaConfig() { return this._schemaConfig; }
 	get tables() { return this.constructor._tables; }
 	get pkName() { return this.schemaConfig.pkName; }
