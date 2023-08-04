@@ -1,10 +1,9 @@
 'use strict'
 
-import { Type, TypeFunc } from "../types/db-type.js";
+import { Type, TypeCheck } from "../types/db-type.js";
 import { TypeFG } from "../types/fg-type.js";
 import { TypePK } from "../types/pk-type.js";
 import { isNullable } from "../utils/utils.js";
-import { newError } from "./error.js";
 import List from "./list-schema.js";
 
 export class Schema {
@@ -66,6 +65,7 @@ export class Schema {
 	}
 
 	// Validate add data columns
+	// Añade las columnas que faltan automaticamente (createdAt, modifiedAt y default values)
 	static _validateData(data) {
 		const dataVal = {};
 
@@ -75,7 +75,7 @@ export class Schema {
 			if(!data.hasOwnProperty(key)) {
 				if(typeof descriptor.pk == "number") {
 					if(descriptor.pk != TypePK.AUTO)
-						throw newError(`(${key}) Falta la clave primaria`);
+						throw new Error(`(${key}) Falta la clave primaria`);
 				}
 				else if(!isNullable(descriptor.default))
 					dataVal[key] = this.connector.constructor.TypeFunc[descriptor.type].d(typeof descriptor.default == "function" ? descriptor.default.bind(this)() : descriptor.default);
@@ -90,7 +90,7 @@ export class Schema {
 				if(this.config.modifiedAt && key == "modified_at")
 					throw new Error(`No se puede introducir una fecha de modificación`);
 
-				if(!TypeFunc[descriptor.type](data[key]))
+				if(!TypeCheck[descriptor.type](data[key]))
 					throw new Error(`(${key}) Tipo inválido`);
 				else if(Array.isArray(descriptor.values) && !descriptor.values.includes(data[key]))
 					throw new Error(`(${key}) Valor no encontrado en values`);
@@ -98,7 +98,7 @@ export class Schema {
 				if(descriptor.type == Type.STRING && descriptor.size < data[key].length)
 					throw new Error(`(${key}) Tamaño excedido`);
 
-				dataVal[key] = this.connector.constructor.TypeFunc[4].d(data[key]);
+				dataVal[key] = this.connector.constructor.TypeFunc[descriptor.type].d(data[key]);
 			}
 		}
 
@@ -109,7 +109,7 @@ export class Schema {
 				if(fg.required)
 					throw new Error(`Falta la clave foránea obligatoria: ${fg.model.fgName()}`);
 			}
-			else if(!(fgValue instanceof fg.model) && !TypeFunc[fg.model.config.pkType](fgValue))
+			else if(!(fgValue instanceof fg.model) && !TypeCheck[fg.model.config.pkType](fgValue))
 				throw new Error(`(${fg.model.fgName()}) Tipo inválido`);
 			dataVal[fg.model.fgName()] = fgValue instanceof fg.model ? fgValue[fg.model.config.pkName] : fgValue;
 		}
@@ -118,6 +118,7 @@ export class Schema {
 
 
 	// Obtención de datos
+	// * la data debe venir desde la BD
 	static _getObj(dataDB) {
 		return new this(dataDB);
 	}
@@ -189,8 +190,7 @@ export class Schema {
 					continue;
 				if(this[columnName.camelCase("_")] == this["_" + columnName.camelCase("_")])
 					continue;
-				dataDB[columnName] = this.constructor.connector.constructor.TypeFunc[this.constructor.config.columns[columnName].type].d(this[columnName.camelCase("_")]);
-				this["_" + columnName.camelCase("_")] = this[columnName.camelCase("_")];
+				dataDB[columnName] = this["_" + columnName.camelCase("_")] = this[columnName.camelCase("_")];
 			}
 		}
 
@@ -220,11 +220,17 @@ export class Schema {
 		else {
 			Object.defineProperty(this, "_" + name, { value, writable: !isPK, enumerable: false });
 			Object.defineProperty(this, "set" + name.charAt(0).toUpperCase() + name.slice(1), { value: function(value) {
-				if(isNullable(value)) {
+				if(value === undefined) {
 					if(!isNullable(descriptor.default))
 						value = typeof descriptor.default == "function" ? descriptor.default.bind(this)() : descriptor.default;
 					else if(descriptor.required)
-						throw new Error(`Valor requerido`);
+						throw new Error(`No hay default para '${name}' y es requerido`);
+					else
+						value = null;
+				}
+				else if(value === null) {
+					if(descriptor.required)
+						throw new Error(`Valor de '${name}' no puede ser null`);
 					else
 						value = null;
 				}
