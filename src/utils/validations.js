@@ -1,5 +1,5 @@
 import { isClass, isInteger, isNullable, isTypeNotNull, isTypeStringNotEmpty } from "./utils.js";
-import { Type, TypeFunc } from "../types/db-type.js";
+import { Type, TypeCheck } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
 import { newError } from "../libs/error.js";
 import { Connector } from "../types/connectors.js";
@@ -58,7 +58,7 @@ const validateColumn = column => {
 		case undefined: break;
 		default:
 			const defVal = typeof column.default == "function" ? column.default() : column.default;
-			if(!TypeFunc[column.type](defVal))
+			if(!TypeCheck[column.type](defVal))
 				throw newError(`valor default erróneo '${defVal}'`);
 			break;
 	}

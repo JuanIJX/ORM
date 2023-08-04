@@ -11,7 +11,7 @@ export const Type = {
 	BOOLEAN: 7,
 };
 
-export const TypeFunc = {
+export const TypeCheck = {
 	[Type.INT]: data => isInteger(data),
 	[Type.UINT]: data => isInteger(data) && data >= 0,
 	[Type.FLOAT]: data => isFloat(data),
