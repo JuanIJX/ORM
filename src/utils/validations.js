@@ -96,6 +96,10 @@ const validateConfig = config => {
 	if(!isTypeNotNull(config, "object"))
 		throw newError(`la config debe ser un objeto`);
 
+	// Table validation
+	if(!validateTableName(config.table))
+		throw newError(`table debe ser un string válido`);
+
 	// createdAt
 	config.createdAt = config.createdAt === true ? true : false;
 	if(config.createdAt && Object.keys(config.columns).includes(`created_at`))
@@ -191,14 +195,11 @@ export const validateEntity = entity => {
 		if(!isClass(entity))
 			throw newError("Clase inválida");
 
-		// Config validation
-		validateConfig(entity.config);
-		// Table validation
 		if(!isTypeStringNotEmpty(entity.config.table))
 			entity.config.table = entity.name.camelToSnakeCase().slice(1);
-		if(!validateTableName(entity.config.table))
-			throw newError(`table debe ser un string válido`);
 
+		// Config validation
+		validateConfig(entity.config);
 	} catch (error) {
 		error.message = `(${entity.name}) ${error.message}`;
 		throw error;
