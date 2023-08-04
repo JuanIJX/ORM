@@ -46,6 +46,21 @@ export class MysqlConnector extends DBConnector {
 		[TypePK.AUTO]: "AUTO_INCREMENT",
 	};
 
+	// Object => DB
+	static TypeFuncNull = (type, value) => {
+		if(isNullable(value))
+			return null;
+		if(!this.TypeFunc.hasOwnProperty(type))
+			return value;
+		return this.TypeFunc[type].d(value);
+	}
+
+
+	/**
+	 * t: para create table VARCHAR
+	 * d: objeto -> db
+	 * o: db -> objeto
+	 */
 	static TypeFunc = {
 		[Type.INT]: {
 			t: (size=11) => `INT(${size})`,
@@ -75,12 +90,12 @@ export class MysqlConnector extends DBConnector {
 		[Type.DATE]: {
 			t: () => `DATE`,
 			d: data => (data instanceof Date) ? data.format(`Y-m-d`) : data,
-			o: data => data,
+			o: data => (data instanceof Date) ? data : new Date(data),
 		},
 		[Type.DATETIME]: {
 			t: () => `DATETIME`,
 			d: data => (data instanceof Date) ? data.format(`Y-m-d H:i:s`) : data,
-			o: data => data,
+			o: data => (data instanceof Date) ? data : new Date(data),
 		},
 		[Type.BOOLEAN]: {
 			t: () => `ENUM('Y', 'N')`,
@@ -169,9 +184,9 @@ export class MysqlConnector extends DBConnector {
 		const campos = [];
 		for (const key in data) {
 			campos.push(`${key} = ?`);
-			values.push(data[key]);
+			values.push(this.TypeFuncNull(this.schemas[table].columns[key].type, data[key]));
 		}
-		values.push(id);
+		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
 		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?`, values);
 	}
 	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?`, [id]); }
