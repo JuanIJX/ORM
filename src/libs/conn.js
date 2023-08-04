@@ -183,9 +183,9 @@ export class DBConnector {
 	// Objeto
 
 	/**
-	 * Inicializa el conector de la base de datos
+	 * Inicializa con la configuración de un schema concreto
 	 * 
-	 * @param {object} idbd Objeto con la conexión a la base de datos
+	 * @param {object} schemaConfig Configuracion del schema o model
 	 */
 	constructor(schemaConfig) {
 		Object.defineProperty(this, `_schemaConfig`, { value: schemaConfig });
