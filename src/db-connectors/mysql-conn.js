@@ -156,12 +156,12 @@ export class MysqlConnector extends DBConnector {
 	// Abstract functions repository
 	static async getElements(table, selects=null, where=null, orders=[], order=true, limit=null, offset=0) {
 		return await this.idbd.rows(
-			`SELECT ${selects === null ? `*` : selects.map(column => `${table}.${column}`).join(", ")}` +
-			`FROM ${table}` +
-			(where!=null) ? " WHERE " + where.print() : "" +
-			(orders != null && orders.length > 0) ? " ORDER BY " + orders.join(", ") + ` ${order ? "ASC" : "DESC"}` : "" +
-			(limit!=null) ? ` LIMIT ${offset}, ${limit}` : ""
-		, where?.values().map(v => this.TypeAuto(v)) ?? []);
+			`SELECT ${selects === null ? `*` : selects.map(column => `${table}.${column}`).join(", ")}`
+			+ ` FROM ${table}`
+			+ ((where!=null) ? " WHERE " + where.print() : "")
+			+ ((orders != null && orders.length > 0) ? " ORDER BY " + orders.join(", ") + ` ${order ? "ASC" : "DESC"}` : "")
+			+ ((limit!=null) ? ` LIMIT ${offset}, ${limit}` : "")
+			+ ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
 	}
 	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?`, [table, pkName, id]); }
 	static async addElement(table, data) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")}`, Object.values(data)))[0].insertId; }
