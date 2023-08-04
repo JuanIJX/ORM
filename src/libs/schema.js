@@ -233,7 +233,7 @@ export class Schema {
 					else
 						value = null;
 				}
-				else if(!TypeFunc[descriptor.type](value))
+				else if(!TypeCheck[descriptor.type](value))
 					throw new Error(`Tipo inválido`);
 				else if(Array.isArray(descriptor.values) && !descriptor.values.includes(value))
 					throw new Error(`Valor no encontrado en values`);
