@@ -2,7 +2,7 @@ import MysqlPool from "./MySQL_pool.js";
 import { DBConnector } from "../libs/conn.js";
 import { Type } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
-import { isNullable } from "../utils/utils.js";
+import { isNullable } from "@ijx/utils";
 
 function dbTypeParse(data) {
 	const [a, ...b] = data.split(" ");
