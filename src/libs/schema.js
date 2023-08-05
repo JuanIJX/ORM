@@ -72,7 +72,7 @@ export class Schema {
 		for (const key in this.config.columns) {
 			const descriptor = this.config.columns[key];
 
-			if(!data.hasOwnProperty(key)) {
+			if(isNullable(data[key])) {
 				if(typeof descriptor.pk == "number") {
 					if(descriptor.pk != TypePK.AUTO)
 						throw new Error(`(${key}) Falta la clave primaria`);
@@ -90,7 +90,6 @@ export class Schema {
 				if(this.config.modifiedAt && key == "modified_at")
 					throw new Error(`No se puede introducir una fecha de modificación`);
 
-				// ALERT: Y si añadimos un null?
 				if(!TypeCheck[descriptor.type](data[key]))
 					throw new Error(`(${key}) Tipo inválido`);
 				else if(Array.isArray(descriptor.values) && !descriptor.values.includes(data[key]))
