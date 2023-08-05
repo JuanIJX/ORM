@@ -26,20 +26,17 @@ export class Schema {
 		dpFg: [],
 
 		columns: {},
-		columnsObj: {},
 	};
 
 	// Load model to database
 	static async _load() {
-		this.config.columnsObj = {}
-		
 		// Date columns
 		if(this.config.createdAt)
 			this.config.columns.created_at = { type: Type.DATETIME, required: true, default: () => new Date() };
 		if(this.config.modifiedAt)
 			this.config.columns.modified_at = { type: Type.DATETIME, required: true, default: () => new Date() };
 
-		// Save pk name and copy config.columns
+		// Save pk info
 		for (const columnName in this.config.columns) {
 			if (Object.hasOwnProperty.call(this.config.columns, columnName)) {
 				const descriptor = this.config.columns[columnName];
@@ -48,7 +45,6 @@ export class Schema {
 					this.config.pkType = descriptor.type;
 					this.config.pkAuto = descriptor.pk;
 				}
-				this.config.columnsObj[columnName.camelCase("_")] = descriptor;
 			}
 		}
 
@@ -170,11 +166,9 @@ export class Schema {
 
 	// OBJECT
 	constructor(data) {
-		// Eliminar para un futuro columnsObj
-		for (const columnName in this.constructor.config.columnsObj) {
-			const clName = columnName.camelToSnakeCase();
-			this._addColumn(columnName, this.constructor.config.columnsObj[columnName], data[clName]);
-			delete data[clName];
+		for (const columnName in this.constructor.config.columns) {
+			this._addColumn(columnName.camelCase("_"), this.constructor.config.columns[columnName], data[columnName]);
+			delete data[columnName];
 		}
 		Object.defineProperty(this, `fgData`, { value: data, configurable: true });
 	}
