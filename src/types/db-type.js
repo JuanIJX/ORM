@@ -1,4 +1,4 @@
-import { isFloat, isInteger } from "../utils/utils.js";
+import { isFloat, isInteger } from "@ijx/utils";
 
 export const Type = {
 	INT: 0,

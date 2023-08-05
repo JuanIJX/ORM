@@ -1,4 +1,4 @@
-import { isClass, isInteger, isNullable, isTypeNotNull, isTypeStringNotEmpty } from "./utils.js";
+import { isClass, isInteger, isNullable, isTypeNotNull, isTypeStringNotEmpty } from "@ijx/utils";
 import { Type, TypeCheck } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
 import { newError } from "../libs/error.js";

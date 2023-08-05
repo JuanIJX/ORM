@@ -3,7 +3,7 @@
 import { Type, TypeCheck } from "../types/db-type.js";
 import { TypeFG } from "../types/fg-type.js";
 import { TypePK } from "../types/pk-type.js";
-import { isNullable } from "../utils/utils.js";
+import { isNullable } from "@ijx/utils";
 import List from "./list-schema.js";
 
 export class Schema {

@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@discordjs/collection": "^1.5.1",
+    "@ijx/utils": "^1.0.10",
     "mysql2": "^3.3.5"
   }
 }
