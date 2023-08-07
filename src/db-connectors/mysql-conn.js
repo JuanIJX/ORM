@@ -180,14 +180,20 @@ export class MysqlConnector extends DBConnector {
 	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?;`, [table, pkName, id]); }
 	static async addElement(table, data) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")};`, Object.values(data)))[0].insertId; }
 	static async updateElementById(table, data, pkName, id) {
+		const schema = this.schemas[table];
 		const values = [];
 		const campos = [];
 		for (const key in data) {
 			campos.push(`${key} = ?`);
-			values.push(this.TypeFuncNull(this.schemas[table].columns[key].type, data[key]));
+			values.push(this.TypeFuncNull(schema.columns[key]?.type, data[key]) ?? schema.fg.find(fg => fg.model.fgName() == key));
 		}
 		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
 		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values);
+	}
+
+	static async updateObject(table, data, id) {
+		const schema = this.schemas[table];
+		return await this.updateElementById(table, data.forEach((value, key) => data[key] = this.TypeFuncNull(schema.columns[key]?.type ?? schema.fg.find(fg => fg.model.fgName() == key).model.config.pkType, value)), schema.pkName, id);
 	}
 	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id]); }
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) {

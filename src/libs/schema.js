@@ -119,23 +119,17 @@ export class Schema {
 		return new this(dataDB);
 	}
 
-	static async get(id, load=true) {
+	static async get(id) {
 		let data = await this.connector.getElementById(id);
 		if(!data)
 			return null;
-		data = this._getObj(data);
-		if(!load)
-			return data;
-		return await data._load();
+		return this._getObj(data);
 	}
-	static async getBy(key, id, load=true) {
+	static async getBy(key, id) {
 		let data = await this.connector.constructor.getElementById(this.connector.table, key, id);
 		if(!data)
 			return null;
-		data = this._getObj(data);
-		if(!load)
-			return data;
-		return await data._load();
+		return this._getObj(data);
 	}
 	static async getAll(where=null, limit=null, offset=0) {
 		const users = [];
@@ -166,11 +160,8 @@ export class Schema {
 
 	// OBJECT
 	constructor(data) {
-		for (const columnName in this.constructor.config.columns) {
-			this._addColumn(columnName.camelCase("_"), this.constructor.config.columns[columnName], data[columnName]);
-			delete data[columnName];
-		}
-		Object.defineProperty(this, `fgData`, { value: data, configurable: true });
+		this.constructor.config.columns.forEach((descriptor, columnName) => this._addColumn(columnName.camelCase("_"), descriptor, data[columnName]));
+		this.constructor.config.fg.forEach(fg => this._addFg(fg, data[fg.model.fgName()]));
 	}
 
 	async save() {
@@ -184,6 +175,12 @@ export class Schema {
 					continue;
 				dataDB[columnName] = this["_" + columnName.camelCase("_")] = this[columnName.camelCase("_")];
 			}
+		}
+		for (const fg of this.constructor.config.fg) {
+			const fgName = fg.model.fgName();
+			if(this["_" + fgName] == this[fgName])
+				continue;
+			dataDB[fgName] = this["_" + fgName] = this[fgName];
 		}
 
 		if(Object.keys(dataDB).length > 0) {
@@ -241,6 +238,29 @@ export class Schema {
 		}
 	}
 
+	_addFg(fg, id) {
+		const model = fg.model;
+		const fgName = model.fgName();
+		const attrName = model.attrName();
+		Object.defineProperty(this, "_" + fgName, { value: id, writable: true });
+		Object.defineProperty(this, fgName, { value: id, writable: true, enumerable: true });
+		Object.defineProperty(this, attrName, { get: async function() {
+			return isNullable(this["_" + fgName]) ? null : await model.get(this["_" + fgName]); }, enumerable: true
+		});
+		Object.defineProperty(this, "set" + attrName.charAt(0).toUpperCase() + attrName.slice(1), { value: function(value) {
+			if(isNullable(value)) {
+				if(fg.required)
+					throw new Error(`Valor de '${attrName}' no puede ser null`);
+				value = null;
+			}
+			else if(!TypeCheck[model.config.pkType](value) && !(value instanceof model))
+				throw new Error(`Tipo inválido`);
+			this[fgName] = value instanceof model ? value._id : value;
+			return this;
+		} });
+	}
+
+	////////// EN DESUSO
 	async _load() {
 		await this._loadFg();
 		await this._loadDpFg();

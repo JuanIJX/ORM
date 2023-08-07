@@ -112,6 +112,17 @@ export class DBConnector {
 	 */
 	static async updateElementById(table, data, pkName, id) { return {}; }
 	/**
+	 * ABSTRACT
+	 * Actualiza un schema
+	 * [table, { data }, id value]
+	 * 
+	 * @param table Nombre de la tabla
+	 * @param data Nuevos datos
+	 * @param id Valor de la PK del schema
+	 * @returns 
+	 */
+	static async updateObject(table, data, id) { return {}; };
+	/**
 	 * ABSTRACT (falta estandarizar la salida)
 	 * Elimina un elemento por su ID
 	 * [table, id key, id value]
@@ -229,7 +240,7 @@ export class DBConnector {
 	async getElements(selects=null, where=null, orders=[], order=true, limit=null, offset=0) { return this.constructor.getElements(this.table, selects, where, orders, order, limit, offset); }
 	async getElementById(id) { return this.constructor.getElementById(this.table, this.pkName, id); }
 	async addElement(data) { return this.constructor.addElement(this.table, data); }
-	async updateElementById(data, id) { return this.constructor.updateElementById(this.table, data, this.pkName, id); }
+	async updateElementById(data, id) { return this.constructor.updateObject(this.table, data, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
 	async deleteElements(where=null, limit=null, offset=0) { return this.constructor.deleteElements(this.table, this.schemaConfig.pkName, where, limit, offset); }
 	async count(where=null) { return this.constructor.count(this.table, where); }
