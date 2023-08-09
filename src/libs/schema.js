@@ -52,9 +52,8 @@ export class Schema {
 		for (let i = 0; i < this.config.fg.length; i++) {
 			const { model, ...fgConfig } = this.config.fg[0];
 			model.config.dpFg.push({ model: this, ...fgConfig });
-
 			if(fgConfig.type == TypeFG.OneToOne)
-				this.config.unique.push(`${model.name.toLowerCase()}_id`);
+				this.config.unique.push(model.fgName());
 		}
 
 		await this.connector.load();
@@ -120,30 +119,30 @@ export class Schema {
 	}
 
 	static async get(id) {
-		let data = await this.connector.getElementById(id);
-		if(!data)
+		let dataDB = await this.connector.getElementByIdLeftJoin(id);
+		if(!dataDB)
 			return null;
-		return this._getObj(data);
+		return this._getObj(dataDB);
 	}
 	static async getBy(key, id) {
-		let data = await this.connector.constructor.getElementById(this.connector.table, key, id);
-		if(!data)
+		let dataDB = await this.connector.constructor.getElementById(this.connector.table, key, id);
+		if(!dataDB)
 			return null;
-		return this._getObj(data);
+		return this._getObj(dataDB);
 	}
 	static async getAll(where=null, limit=null, offset=0) {
-		const users = [];
+		const objs = [];
 		const dataDB = await this.connector.getElements(null, where, ["created_at"], true, limit, offset) ?? [];
 		for (const userDB of dataDB)
-			users.push(this._getObj(userDB));
-		return users;
+			objs.push(this._getObj(userDB));
+		return objs;
 	}
-	static async add(data) {
-		data = this._validateData(data);
-		const lastID = await this.connector.addElement(data);
+	static async add(dataDB) {
+		dataDB = this._validateData(dataDB);
+		const lastID = await this.connector.addElement(dataDB);
 		if(this.config.pkAuto == TypePK.AUTO)
-			data[this.config.pkName] = lastID;
-		return this._getObj(data);
+			dataDB[this.config.pkName] = lastID;
+		return this._getObj(dataDB);
 	}
 	// ALERTA, cada deleteElement segun el conector puede devolver algo diferente
 	static async delete(id) {
@@ -162,6 +161,12 @@ export class Schema {
 	constructor(data) {
 		this.constructor.config.columns.forEach((descriptor, columnName) => this._addColumn(columnName.camelCase("_"), descriptor, data[columnName]));
 		this.constructor.config.fg.forEach(fg => this._addFg(fg, data[fg.model.fgName()]));
+		this.constructor.config.dpFg.forEach(fg => {
+			if(fg.type == TypeFG.ManyToOne)
+				Object.defineProperty(this, fg.model.attrName() + "List", { value: new List(this, fg.model) , enumerable: true });
+			else
+				this._addDpFg(fg, data[this.constructor.connector.pref + fg.model.fgName()]);
+		});
 	}
 
 	async save() {
@@ -244,9 +249,7 @@ export class Schema {
 		const attrName = model.attrName();
 		Object.defineProperty(this, "_" + fgName, { value: id, writable: true });
 		Object.defineProperty(this, fgName, { value: id, writable: true, enumerable: true });
-		Object.defineProperty(this, attrName, { get: async function() {
-			return isNullable(this["_" + fgName]) ? null : await model.get(this["_" + fgName]); }, enumerable: true
-		});
+		Object.defineProperty(this, attrName, { get: async function() { return isNullable(this["_" + fgName]) ? null : await model.get(this["_" + fgName]); }, enumerable: true });
 		Object.defineProperty(this, "set" + attrName.charAt(0).toUpperCase() + attrName.slice(1), { value: function(value) {
 			if(isNullable(value)) {
 				if(fg.required)
@@ -258,6 +261,27 @@ export class Schema {
 			this[fgName] = value instanceof model ? value._id : value;
 			return this;
 		} });
+	}
+
+	_addDpFg(fg, id) {
+		const model = fg.model;
+		const fgName = model.fgName();
+		const attrName = model.attrName();
+
+		Object.defineProperty(this, "_" + fgName, { value: id, writable: true });
+		//Object.defineProperty(this, fgName, { value: id, writable: true, enumerable: true });
+		Object.defineProperty(this, attrName, { get: async function() { return isNullable(this["_" + fgName]) ? null : await model.get(this["_" + fgName]); }, enumerable: true });
+		/*Object.defineProperty(this, "set" + attrName.charAt(0).toUpperCase() + attrName.slice(1), { value: function(value) {
+			if(isNullable(value)) {
+				if(fg.required)
+					throw new Error(`Valor de '${attrName}' no puede ser null`);
+				value = null;
+			}
+			else if(!TypeCheck[model.config.pkType](value) && !(value instanceof model))
+				throw new Error(`Tipo inválido`);
+			this[fgName] = value instanceof model ? value._id : value;
+			return this;
+		} });*/
 	}
 
 	////////// EN DESUSO
