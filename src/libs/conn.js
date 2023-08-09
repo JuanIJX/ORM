@@ -1,3 +1,4 @@
+import { TypeFG } from "../types/fg-type.js";
 import { validateDbConfig } from "../utils/validations.js";
 
 export class DBConnector {
@@ -82,6 +83,19 @@ export class DBConnector {
 	 * @returns Objeto
 	 */
 	static async getElementById(table, pkName, id) { return null; }
+	/**
+	 * ABSTRACT
+	 * Obtiene un elemento por su ID con left join
+	 * [table, id key, id value, fg name, tables object]
+	 * 
+	 * @param {string} table Nombre de la tabla
+	 * @param {string} pkName Nombre de la ID
+	 * @param {string|number} id Valor de la ID
+	 * @param {string} fgName Nombre de la clave foránea
+	 * @param {object} tablesObj Conjunto de { tabla: pkName }
+	 * @returns Objeto
+	 */
+	static async getElementByIdLeftJoin(table, pkName, id, fgName, tablesObj={}) { return null }
 	/**
 	 * ABSTRACT
 	 * Añade un elemento
@@ -200,14 +214,15 @@ export class DBConnector {
 	 * 
 	 * @param {object} schemaConfig Configuracion del schema o model
 	 */
-	constructor(schemaConfig) {
-		Object.defineProperty(this, `_schemaConfig`, { value: schemaConfig });
+	constructor(schema) {
+		Object.defineProperty(this, `_schema`, { value: schema });
 		this.table = this.pref + this.schemaConfig.table;
 	}
 
 	get idbd() { return this.constructor.idbd; }
 	get pref() { return this.constructor.pref; }
-	get schemaConfig() { return this._schemaConfig; }
+	get schema() { return this._schema; }
+	get schemaConfig() { return this._schema.config; }
 	get tables() { return this.constructor._tables; }
 	get pkName() { return this.schemaConfig.pkName; }
 
@@ -239,6 +254,15 @@ export class DBConnector {
 	// Functions repository (resumido)
 	async getElements(selects=null, where=null, orders=[], order=true, limit=null, offset=0) { return this.constructor.getElements(this.table, selects, where, orders, order, limit, offset); }
 	async getElementById(id) { return this.constructor.getElementById(this.table, this.pkName, id); }
+	async getElementByIdLeftJoin(id) {
+		const subtables = {};
+		for (const dpFg of this.schemaConfig.dpFg) {
+			if(dpFg.type != TypeFG.OneToOne)
+				continue;
+			subtables[`${this.pref}${dpFg.model.config.table}`] = dpFg.model.config.pkName;
+		}
+		return this.constructor.getElementByIdLeftJoin(this.table, this.pkName, id, this.schema.fgName(), subtables);
+	}
 	async addElement(data) { return this.constructor.addElement(this.table, data); }
 	async updateElementById(data, id) { return this.constructor.updateObject(this.table, data, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
@@ -248,7 +272,6 @@ export class DBConnector {
 	async min(column, where=null) { return this.constructor.min(this.table, column, where); }
 	async sum(column, where=null) { return this.constructor.sum(this.table, column, where); }
 	async avg(column, where=null) { return this.constructor.avg(this.table, column, where); }
-
 
 
 
