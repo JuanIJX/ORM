@@ -178,6 +178,15 @@ export class MysqlConnector extends DBConnector {
 			+ ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
 	}
 	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?;`, [table, pkName, id]); }
+	static async getElementByIdLeftJoin(table, pkName, id, fgName, tablesObj={}) {
+		const selects = [table + `.*`];
+		const tables = [table];
+		tablesObj.forEach((value, key) => {
+			selects.push(`${key}.${value} as ${key}_${value}`);
+			tables.push(`LEFT JOIN ${key} ON ${table}.${pkName} = ${key}.${fgName}`);
+		});
+		return await this.idbd.row(`SELECT ${selects.join(", ")} FROM ${tables.join(" ")} WHERE ?? = ?;`, [`${table}.${pkName}`, id]);
+	}
 	static async addElement(table, data) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")};`, Object.values(data)))[0].insertId; }
 	static async updateElementById(table, data, pkName, id) {
 		const schema = this.schemas[table];
