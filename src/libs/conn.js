@@ -123,7 +123,7 @@ export class DBConnector {
 	 * @param data Nuevos datos
 	 * @param pkName Nombre de la ID
 	 * @param id Valor de la ID
-	 * @returns 
+	 * @returns Numero de filas cambiadas
 	 */
 	static async updateElementById(table, data, pkName, id) { return {}; }
 	/**
@@ -134,7 +134,7 @@ export class DBConnector {
 	 * @param table Nombre de la tabla
 	 * @param data Nuevos datos
 	 * @param id Valor de la PK del schema
-	 * @returns 
+	 * @returns Numero de filas cambiadas
 	 */
 	static async updateObject(table, data, id) { return {}; };
 	/**
@@ -145,6 +145,7 @@ export class DBConnector {
 	 * @param table Nombre de la tabla
 	 * @param pkName Nombre de la ID
 	 * @param id Valor de la ID
+	 * @returns Numero de filas eliminadas
 	 */
 	static async deleteElementById(table, pkName, id) { return {}; }
 	/**
@@ -156,7 +157,7 @@ export class DBConnector {
 	 * @param {number|null} limit Cantidad de datos que se van a eliminar
 	 * @param {number} offset Índice de comienzo para empezar a eliminar
 	 * @param {Where|null} where Objeto con las restricciones
-	 * @returns 
+	 * @returns Numero de filas eliminadas
 	 */
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) { return {}; }
 	/**
