@@ -20,23 +20,24 @@ export class DBConnector {
 		return null;
 	};
 
+
+
+	// Abstract functions
 	/**
+	 * ABSTRACT
 	 * Cierra la conexión a la base de datos
 	 */
 	static async close() { this.idbd.close(); }
 
 	/**
+	 * ABSTRACT
 	 * Se envía un comando SQL con sus parámetros al servidor
 	 * 
 	 * @param query Comando SQL
 	 * @param params Parámetros del comando
 	 * @returns Segun la query devolverá una respuesta diferente
 	 */
-	static async sendCommand(query, params) { return await this.idbd.query(query, params); }
-
-
-
-	// Abstract functions
+	static async sendCommand(query, params) { return {}; }
 
 	/**
 	 * ABSTRACT
