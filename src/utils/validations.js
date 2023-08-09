@@ -117,19 +117,36 @@ const validateConfig = config => {
 	if(isNullable(config.unique))
 		config.unique = [];
 	else if(Array.isArray(config.unique)) {
-		for (const uniqueColArry of config.unique) {
-			if(Array.isArray(uniqueColArry)) {
+		const repArry2 = [];
+		for (let j = 0; j < config.unique.length; j++) {
+			if(Array.isArray(config.unique[j])) {
+				const uniqueColArry = config.unique[j];
 				const repArry = [];
-				for (const uniqueCol of uniqueColArry) {
-					if(!Object.keys(config.columns).includes(uniqueCol))
-						throw newError(`la columna única '${uniqueCol}' debe pertenecer a una de las columnas`);
-					if(repArry.includes(uniqueCol))
-						throw newError(`restricción única repetida ${uniqueCol}`);
-					repArry.push(uniqueCol);
+				for (let i = 0; i < uniqueColArry.length; i++) {
+					if(Schema.isPrototypeOf(uniqueColArry[i])) {
+						if(!config.fg.some(fg => fg.model === uniqueColArry[i]))
+							throw newError(`la columna única '${uniqueColArry[i].name}' debe pertenecer a una clave foránea`);
+						uniqueColArry[i] = uniqueColArry[i].fgName();
+					}
+					else if(!Object.keys(config.columns).includes(uniqueColArry[i]))
+						throw newError(`la columna única '${uniqueColArry[i]}' debe pertenecer a una de las columnas`);
+
+					if(repArry.includes(uniqueColArry[i]))
+						throw newError(`restricción única repetida ${uniqueColArry[i]}`);
+					repArry.push(uniqueColArry[i]);
 				}
 			}
-			else if(!Object.keys(config.columns).includes(uniqueColArry))
-				throw newError(`la columna única '${uniqueColArry}' debe pertenecer a una de las columnas`);
+			else if(Schema.isPrototypeOf(config.unique[j])) {
+				if(!config.fg.some(fg => fg.model === config.unique[j]))
+					throw newError(`la columna única '${config.unique[j].name}' debe pertenecer a una clave foránea`);
+				config.unique[j] = config.unique[j].fgName();
+			}
+			else if(!Object.keys(config.columns).includes(config.unique[j]))
+				throw newError(`la columna única '${config.unique[j]}' debe pertenecer a una de las columnas`);
+
+			if(repArry2.includes(config.unique[j]))
+				throw newError(`restricción única repetida ${config.unique[j]}`);
+			repArry2.push(config.unique[j]);
 		}
 	}
 	else
