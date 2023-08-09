@@ -153,6 +153,8 @@ export class MysqlConnector extends DBConnector {
 
 
 	// Abstract functions
+	static async close() { await this.idbd.close(); }
+	static async sendCommand(query, params) { return await this.idbd.query(query, params); }
 	static async getTables() { return (await this.idbd.rows(`SHOW TABLES;`)).map(e => Object.values(e)[0]); }
 	static async tableToObject(table) {
 		const obj = { table: table, columns: {}, unique: [], fg: [] };
