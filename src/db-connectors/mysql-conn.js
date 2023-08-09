@@ -199,14 +199,14 @@ export class MysqlConnector extends DBConnector {
 			values.push(this.TypeFuncNull(schema.columns[key]?.type, data[key]) ?? schema.fg.find(fg => fg.model.fgName() == key));
 		}
 		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
-		return await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values);
+		return (await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values))[0].changedRows;
 	}
 
 	static async updateObject(table, data, id) {
 		const schema = this.schemas[table];
-		return await this.updateElementById(table, data.forEach((value, key) => data[key] = this.TypeFuncNull(schema.columns[key]?.type ?? schema.fg.find(fg => fg.model.fgName() == key).model.config.pkType, value)), schema.pkName, id);
+		return (await this.updateElementById(table, data.forEach((value, key) => data[key] = this.TypeFuncNull(schema.columns[key]?.type ?? schema.fg.find(fg => fg.model.fgName() == key).model.config.pkType, value)), schema.pkName, id))[0].changedRows;
 	}
-	static async deleteElementById(table, pkName, id) { return await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id]); }
+	static async deleteElementById(table, pkName, id) { return (await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id]))[0].affectedRows; }
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) {
 		/*where?.entries().map(([column, value]) =>
 			this.schemaConfig.columns.hasOwnProperty(column) ?
@@ -226,7 +226,7 @@ export class MysqlConnector extends DBConnector {
 					`)`,
 				].join("\n") : ""
 			) + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
-		return await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
+		return (await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? []))[0].affectedRows;
 	}
 	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
 	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
