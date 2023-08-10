@@ -204,7 +204,7 @@ export class MysqlConnector extends DBConnector {
 
 	static async updateObject(table, data, id) {
 		const schema = this.schemas[table];
-		return (await this.updateElementById(table, data.forEach((value, key) => data[key] = this.TypeFuncNull(schema.columns[key]?.type ?? schema.fg.find(fg => fg.model.fgName() == key).model.config.pkType, value)), schema.pkName, id))[0].changedRows;
+		return await this.updateElementById(table, data.forEach((value, key) => data[key] = this.TypeFuncNull(schema.columns[key]?.type ?? schema.fg.find(fg => fg.model.fgName() == key).model.config.pkType, value)), schema.pkName, id);
 	}
 	static async deleteElementById(table, pkName, id) { return (await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id]))[0].affectedRows; }
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) {
