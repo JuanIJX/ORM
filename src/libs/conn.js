@@ -54,6 +54,15 @@ export class DBConnector {
 	 * @returns objeto con los datos de la tabla
 	 */
 	static async tableToObject(table) { return {}; }
+	/**
+	 * ABSTRACT
+	 * Ejecuta un procedure
+	 * 
+	 * @param {String} name 
+	 * @param  {...(number|string|null)} vars 
+	 * @returns 
+	 */
+	static async procedure(name, ...vars) { return [] }
 
 
 
