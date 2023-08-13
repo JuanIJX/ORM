@@ -50,7 +50,7 @@ export class Schema {
 
 		// Fg
 		for (let i = 0; i < this.config.fg.length; i++) {
-			const { model, ...fgConfig } = this.config.fg[0];
+			const { model, ...fgConfig } = this.config.fg[i];
 			model.config.dpFg.push({ model: this, ...fgConfig });
 			if(fgConfig.type == TypeFG.OneToOne)
 				this.config.unique.push(model.fgName());
