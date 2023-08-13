@@ -1,6 +1,6 @@
 {
   "name": "@ijx/orm",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "Object-Relational mapping",
   "main": "src/index.js",
   "type": "module",
