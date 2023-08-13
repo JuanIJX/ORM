@@ -172,7 +172,7 @@ export class MysqlConnector extends DBConnector {
 		});
 		return obj;
 	};
-	static async procedure(name, ...vars) { return (await idbd.query(callSql(name, ...vars)))[0][0]; }
+	static async procedure(name, ...vars) { return (await this.idbd.query(callSql(name, ...vars)))[0][0]; }
 
 	// Abstract functions repository
 	static async getElements(table, selects=null, where=null, orders=[], order=true, limit=null, offset=0) {
