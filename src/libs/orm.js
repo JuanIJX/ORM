@@ -24,6 +24,7 @@ export class ORM {
 		if(typeof func != "function")
 			throw newError(`Se esperaba una función`);
 		this._onLoad = func;
+		return this;
 	}
 
 	static addEntity(entity) {
