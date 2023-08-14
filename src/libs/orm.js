@@ -17,10 +17,9 @@ export class ORM {
 		await this._load();
 		this._initialized = true;
 		await this._onLoad(this._conn);
-		return this;
 	}
 
-	static async onLoad(func) {
+	static onLoad(func) {
 		if(typeof func != "function")
 			throw newError(`Se esperaba una función`);
 		this._onLoad = func;
