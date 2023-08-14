@@ -275,7 +275,7 @@ export class DBConnector {
 		}
 		return this.constructor.getElementByIdLeftJoin(this.table, this.pkName, id, this.schema.fgName(), subtables);
 	}
-	async addElement(data) { return this.constructor.addElement(this.table, data); }
+	async addElement(data, checkKey=null) { return this.constructor.addElement(this.table, data, checkKey); }
 	async updateElementById(data, id) { return this.constructor.updateObject(this.table, data, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
 	async deleteElements(where=null, limit=null, offset=0) { return this.constructor.deleteElements(this.table, this.schemaConfig.pkName, where, limit, offset); }
