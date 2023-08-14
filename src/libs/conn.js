@@ -113,6 +113,7 @@ export class DBConnector {
 	 * 
 	 * @param table Nombre de la tabla
 	 * @param data Objeto con los datos a añadir
+	 * @param checkKey Nombre de la clave primaria
 	 * @returns Ejemplo de ResultSetHeader {
 		fieldCount: 0,
 		affectedRows: 1,
@@ -122,7 +123,7 @@ export class DBConnector {
 		warningStatus: 0
 	}
 	 */
-	static async addElement(table, data) { return null; }
+	static async addElement(table, data, checkKey=null) { return null; }
 	/**
 	 * ABSTRACT
 	 * Actualiza un elemento
