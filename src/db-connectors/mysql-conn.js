@@ -194,7 +194,7 @@ export class MysqlConnector extends DBConnector {
 		});
 		return await this.idbd.row(`SELECT ${selects.join(", ")} FROM ${tables.join(" ")} WHERE ?? = ?;`, [`${table}.${pkName}`, id]);
 	}
-	static async addElement(table, data, checkKey=null) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")}${checkKey != null ? `ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`, Object.values(data)))[0].insertId; }
+	static async addElement(table, data, checkKey=null) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`${v} = ?`).join(", ")}${checkKey != null ? ` ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`, Object.values(data)))[0].insertId; }
 	static async updateElementById(table, data, pkName, id) {
 		const schema = this.schemas[table];
 		const values = [];
