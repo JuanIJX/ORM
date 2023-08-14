@@ -7,6 +7,7 @@ export class ORM {
 	static _modelsTemp = new Set();
 	static _conn = null;
 	static _initialized = false;
+	static _onLoad = () => {};
 
 	static async init(config) {
 		validateInitConfig(config);
@@ -15,6 +16,14 @@ export class ORM {
 		this._conn = conn;
 		await this._load();
 		this._initialized = true;
+		await this._onLoad(this._conn);
+		return this;
+	}
+
+	static async onLoad(func) {
+		if(typeof func != "function")
+			throw newError(`Se esperaba una función`);
+		this._onLoad = func;
 	}
 
 	static addEntity(entity) {
