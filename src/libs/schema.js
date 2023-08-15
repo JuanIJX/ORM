@@ -99,10 +99,11 @@ export class Schema {
 
 		// Aseguramos que en add no falte las claves fg si se requieren
 		for (const fg of this.config.fg) {
-			const fgValue = data[fg.model.fgName()];
+			let fgValue = data[fg.model.fgName()];
 			if(isNullable(fgValue)) {
 				if(fg.required)
 					throw new Error(`Falta la clave foránea obligatoria: ${fg.model.fgName()}`);
+				fgValue = null;
 			}
 			else if(!(fgValue instanceof fg.model) && !TypeCheck[fg.model.config.pkType](fgValue))
 				throw new Error(`(${fg.model.fgName()}) Tipo inválido`);
