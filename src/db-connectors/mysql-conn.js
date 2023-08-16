@@ -5,7 +5,13 @@ import { TypePK } from "../types/pk-type.js";
 import { isNullable } from "@ijx/utils";
 
 function callSql(procedure, ...vars) {
-	return `CALL ${procedure}(${vars.map(param => typeof param == "number" || param === null ? param : `'${param}'`).join(", ")})`;
+	return `CALL ${procedure}(${vars.map(param => {
+		if(typeof param == "number")
+			return param;
+		else if(param === null)
+			return "NULL"
+		return `'${param}'`;
+	}).join(", ")})`;
 }
 
 function dbTypeParse(data) {
