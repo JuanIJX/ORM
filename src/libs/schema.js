@@ -203,6 +203,18 @@ export class Schema {
 			this[fg.model.name.toLowerCase()][this.constructor.name.toLowerCase()] = null;
 	}
 
+	toJSON(replacer, space) {
+		const data = {};
+		this.constructor.config.columns.forEach((_, columnName) => data[columnName] = this[columnName.camelCase("_")]);
+		this.constructor.config.fg.forEach(fg => data[fg.model.fgName()] = this["_" + fg.model.fgName()]);
+		this.constructor.config.dpFg.forEach(fg => {
+			if(fg.type == TypeFG.ManyToOne)
+				return;
+			data[fg.model.fgName()] = this["_" + fg.model.fgName()]
+		});
+		return JSON.stringify(data, replacer, space);
+	}
+
 
 	// Private functions
 	_addColumn(name, descriptor, value) {
