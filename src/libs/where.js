@@ -41,5 +41,5 @@ export class Cmp {
 	}
 
 	values() { return [this.value]; }
-	print() { return `${this.column} ${this.constructor._cmpList[this.cp]} ?`; }
+	print(char='\`') { return `${char}${this.column}${char} ${this.constructor._cmpList[this.cp]} ?`; }
 }
