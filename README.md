@@ -157,6 +157,7 @@ user
 	.setDisplayname("displayed2")
 	.setVerifyLevel(1);
 await user.save();
+console.log(user.toJSON());
 
 const users = await User.getAll(
 	Where.AND(
@@ -164,5 +165,4 @@ const users = await User.getAll(
 		Cmp.GE("verify_level", 1)
 	)
 );
-console.log(user2.toJSON());
 ```
