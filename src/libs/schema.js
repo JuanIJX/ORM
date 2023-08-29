@@ -138,14 +138,15 @@ export class Schema {
 			objs.push(this._getObj(userDB));
 		return objs;
 	}
-	static async add(dataDB) {
+	static async add(dataDB, checkExists=false) {
 		dataDB = this._validateData(dataDB);
-		const lastID = await this.connector.addElement(dataDB);
+		const lastID = await this.connector.addElement(dataDB, checkExists ? this.config.pkName : null);
+		if(checkExists) // Ya que lo devuelto puede no ser lo real
+			return null;
 		if(this.config.pkAuto == TypePK.AUTO)
 			dataDB[this.config.pkName] = lastID;
 		return this._getObj(dataDB);
 	}
-	// ALERTA, cada deleteElement segun el conector puede devolver algo diferente
 	static async delete(id) {
 		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1;
 	}
