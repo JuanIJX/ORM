@@ -204,7 +204,7 @@ export class Schema {
 			this[fg.model.name.toLowerCase()][this.constructor.name.toLowerCase()] = null;
 	}
 
-	toJSON(replacer, space) {
+	toObject() {
 		const data = {};
 		this.constructor.config.columns.forEach((_, columnName) => data[columnName] = this[columnName.camelCase("_")]);
 		this.constructor.config.fg.forEach(fg => data[fg.model.fgName()] = this["_" + fg.model.fgName()]);
@@ -213,7 +213,11 @@ export class Schema {
 				return;
 			data[fg.model.fgName()] = this["_" + fg.model.fgName()]
 		});
-		return JSON.stringify(data, replacer, space);
+		return data;
+	}
+
+	toJSON(replacer, space) {
+		return JSON.stringify(this.toObject(), replacer, space);
 	}
 
 

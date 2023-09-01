@@ -84,6 +84,10 @@ count(where?: Where): Promise<number>
   */
  delete(): Promise<void>
  /**
+  * Devuelve un objeto para transformar en json
+  */
+ toObject(): Object
+ /**
   * Transform schema to json string
   */
  toJSON(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string
