@@ -133,9 +133,9 @@ export class Schema {
 			return null;
 		return this._getObj(dataDB);
 	}
-	static async getAll(where=null, limit=null, offset=0) {
+	static async getAll(where=null, limit=null, offset=0, orderBy=null, orderType=null) {
 		const objs = [];
-		const dataDB = await this.connector.getElements(null, where, ["created_at"], true, limit, offset) ?? [];
+		const dataDB = await this.connector.getElements(null, where, orderBy ?? this.config.orderBy, orderType ?? this.config.orderType, limit, offset) ?? [];
 		for (const userDB of dataDB)
 			objs.push(this._getObj(userDB));
 		return objs;
