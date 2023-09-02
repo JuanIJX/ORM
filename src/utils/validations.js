@@ -204,6 +204,22 @@ const validateConfig = config => {
 	// Foreigns dependientes
 	config.dpFg = [];
 
+	// Order
+	config.orderType = typeof config.orderType == "boolean" ? config.orderType : true;
+	if(isNullable(config.orderBy))
+		config.orderBy = config.createdAt ? ["created_at"] : [];
+	else {
+		for (let i = 0; i < config.orderBy.length; i++) {
+			if(Schema.isPrototypeOf(config.orderBy[i])) {
+				if(!config.fg.some(fg => fg.model === config.orderBy[i]))
+					throw newError(`la columna order by '${config.orderBy[i].name}' debe pertenecer a una clave foránea`);
+				config.orderBy[i] = config.orderBy[i].fgName();
+			}
+			else if(!Object.keys(config.columns).includes(config.orderBy[i]))
+				throw newError(`la columna order by '${config.orderBy[i]}' debe pertenecer a una de las columnas`);
+		}
+	}
+
 	return true;
 }
 
