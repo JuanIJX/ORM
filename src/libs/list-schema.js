@@ -28,7 +28,7 @@ export default class List {
 			return null;
 		return this._entity._getObj(dataDB);
 	}
-	async getAll(limit=null, offset=0, where=null) {
+	async getAll(where=null, limit=null, offset=0) {
 		where = [
 			Cmp.EQ(this._obj.constructor.fgName(), this._obj._id),
 			...(where === null ? [] : [where])
@@ -42,7 +42,7 @@ export default class List {
 	async add(data) {
 		return await this._entity.add({ data, [this._obj.constructor.fgName()]: this._obj._id})
 	}
-	async deleteAll(limit=null, offset=0, where=null) {
+	async deleteAll(where=null, limit=null, offset=0) {
 		where = [
 			Cmp.EQ(this._obj.constructor.fgName(), this._obj._id),
 			...(where === null ? [] : [where])
