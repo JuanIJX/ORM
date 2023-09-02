@@ -24,6 +24,8 @@ export class Schema {
 		pkAuto: null,
 		fg: [],
 		dpFg: [],
+		orderBy: [],
+		orderType: true,
 
 		columns: {},
 	};
