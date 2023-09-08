@@ -52,19 +52,27 @@ export default class MysqlPool {
 
 	async query(command, params=[]) {
 		this.lastQuery = command;
-		return await this.idbd.query(this.lastQuery, params);
+		return await this.idbd.query(this.lastQuery, params).catch(error => {
+			console.log("ERROR EXTRAÑO EN POOL query")
+			console.log(error);
+			return null;
+		});
 	}
 
 	async execute(command, params=[]) {
 		this.lastQuery = command;
-		return await this.idbd.execute(this.lastQuery, params);
+		return await this.idbd.execute(this.lastQuery, params).catch(error => {
+			console.log("ERROR EXTRAÑO EN POOL execute")
+			console.log(error);
+			return null;
+		});
 	}
 
 	async rows(cad, params=[]) {
-		return (await this.query(cad, params))[0];
+		return await this.query(cad, params).then(r => r ? r[0] : null);
 	}
 
 	async row(cad, params=[]) {
-		return (await this.rows(cad, params))[0];
+		return await this.rows(cad, params).then(r => r ? r[0] : null);
 	}
 }
