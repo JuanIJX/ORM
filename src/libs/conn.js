@@ -137,17 +137,6 @@ export class DBConnector {
 	 */
 	static async updateElementById(table, data, pkName, id) { return {}; }
 	/**
-	 * ABSTRACT
-	 * Actualiza un schema
-	 * [table, { data }, id value]
-	 * 
-	 * @param table Nombre de la tabla
-	 * @param data Nuevos datos
-	 * @param id Valor de la PK del schema
-	 * @returns Numero de filas cambiadas
-	 */
-	static async updateObject(table, data, id) { return {}; };
-	/**
 	 * ABSTRACT (falta estandarizar la salida)
 	 * Elimina un elemento por su ID
 	 * [table, id key, id value]
@@ -276,7 +265,7 @@ export class DBConnector {
 		return this.constructor.getElementByIdLeftJoin(this.table, this.pkName, id, this.schema.fgName(), subtables);
 	}
 	async addElement(data, checkKey=null) { return this.constructor.addElement(this.table, data, checkKey); }
-	async updateElementById(data, id) { return this.constructor.updateObject(this.table, data, id); }
+	async updateElementById(data, id) { return this.constructor.updateElementById(this.table, data, this.pkName, id); }
 	async deleteElementById(id) { return this.constructor.deleteElementById(this.table, this.pkName, id); }
 	async deleteElements(where=null, limit=null, offset=0) { return this.constructor.deleteElements(this.table, this.schemaConfig.pkName, where, limit, offset); }
 	async count(where=null) { return this.constructor.count(this.table, where); }
