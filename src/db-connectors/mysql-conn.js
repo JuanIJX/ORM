@@ -206,8 +206,17 @@ export class MysqlConnector extends DBConnector {
 		const values = [];
 		const campos = [];
 		for (const key in data) {
-			campos.push(`\`${key}\` = ?`);
-			values.push(this.TypeFuncNull(schema.columns[key]?.type, data[key]) ?? schema.fg.find(fg => fg.model.fgName() == key));
+			if(schema.columns.hasOwnProperty(key)) {
+				campos.push(`\`${key}\` = ?`);
+				values.push(this.TypeFuncNull(schema.columns[key].type, data[key]));
+			}
+			else {
+				const modelInfo = schema.fg.find(fg => fg.model.fgName() == key);
+				if(modelInfo) {
+					campos.push(`\`${key}\` = ?`);
+					values.push(this.TypeFuncNull(modelInfo.model.config.pkType, data[key]));
+				}
+			}
 		}
 		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
 		return (await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values))[0].changedRows;
