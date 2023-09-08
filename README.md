@@ -76,9 +76,9 @@ count(where?: Where): Promise<number>
  setExampleAttribute...(value: any): Schema
  /**
   * Save schema
-  * @return schema
+  * @return number of changed attributes
   */
- save(): Promise<Schema>
+ save(): Promise<number>
  /**
   * Delete schema
   */

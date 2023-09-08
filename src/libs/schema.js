@@ -197,7 +197,7 @@ export class Schema {
 				dataDB[`modified_at`] = new Date();
 			await this.constructor.connector.updateElementById(dataDB, this._id);
 		}
-		return this;
+		return Object.keys(dataDB).length;
 	}
 
 	async delete() {
