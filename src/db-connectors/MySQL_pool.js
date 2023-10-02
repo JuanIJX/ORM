@@ -34,10 +34,13 @@ export default class MysqlPool {
 	async checkConn() {
 		return new Promise((resolve, reject) => {
 			this.idbd.getConnection(err => {
-				if(err) reject(err);
+				if(err) {
+					this._connected = false;
+					reject(err);
+				}
 				else {
 					this._connected = true;
-					resolve(true);
+					resolve(null);
 				}
 			});
 		});
