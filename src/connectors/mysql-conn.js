@@ -1,4 +1,4 @@
-import MysqlPool from "./MySQL_pool2.js";
+import MysqlPool from "../drivers/MySQL_pool2.js";
 import { DBConnector } from "../libs/conn.js";
 import { Type } from "../types/db-type.js";
 import { TypePK } from "../types/pk-type.js";
