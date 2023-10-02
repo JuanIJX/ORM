@@ -21,6 +21,7 @@ export default class MysqlPool {
 			user,
 			password: pass,
 			database: name,
+			
 			waitForConnections: true,
 			connectionLimit: 10,
 			queueLimit: 0

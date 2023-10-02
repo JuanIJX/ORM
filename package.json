@@ -1,6 +1,6 @@
 {
   "name": "@ijx/orm",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "description": "Object-Relational mapping",
   "main": "src/index.js",
   "type": "module",
@@ -29,6 +29,7 @@
   "dependencies": {
     "@discordjs/collection": "^1.5.1",
     "@ijx/utils": "^1.0.13",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "mysql2": "^3.6.1"
   }
 }
