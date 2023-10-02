@@ -1,4 +1,4 @@
-import Mysql from "mysql2"
+import Mysql from "mysql"
 
 export default class MysqlPool {
 	constructor(host="", user="", pass="", name="", pref="", port=3306) {
@@ -21,24 +21,30 @@ export default class MysqlPool {
 			user,
 			password: pass,
 			database: name,
+			debug: false,
+			connectTimeout  : 2000,
+
+			acquireTimeout: 2000,
 			waitForConnections: true,
 			connectionLimit: 10,
 			queueLimit: 0
-		}).promise();
+		});
 	}
 
 	async checkConn() {
-		return await this.idbd.getConnection().then(() => {
-			this._connected = true;
-			return null;
-		}).catch(err => {
-			this._connected = false;
-			return err;
+		return new Promise((resolve, reject) => {
+			this.idbd.getConnection(err => {
+				if(err) reject(err);
+				else {
+					this._connected = true;
+					resolve(true);
+				}
+			});
 		});
 	}
 
 	closed() {
-		return this.idbd.pool._closed;
+		return this.idbd._closed;
 	}
 
 	connected() {
@@ -46,26 +52,31 @@ export default class MysqlPool {
 	}
 
 	async close() {
-		this._connected = true; // Lo pongo antes por como está construído .end()
-		await this.idbd.end();
+		return new Promise((resolve, reject) => {
+			this.idbd.end(err => {
+				if(err)
+					reject(err);
+				else {
+					this._connected = false;
+					resolve();
+				}
+			});
+		});
 	}
 
 	async query(command, params=[]) {
 		this.lastQuery = command;
-		return await this.idbd.query(this.lastQuery, params).catch(error => {
-			console.log("ERROR EXTRAÑO EN POOL query")
-			console.log(error);
-			return null;
+		return new Promise((resolve, reject) => {
+			this.idbd.query(this.lastQuery, params, function (error, results, fields) {
+				if (error) reject(error);
+				else
+					resolve([results, fields]);
+			});
 		});
 	}
 
 	async execute(command, params=[]) {
-		this.lastQuery = command;
-		return await this.idbd.execute(this.lastQuery, params).catch(error => {
-			console.log("ERROR EXTRAÑO EN POOL execute")
-			console.log(error);
-			return null;
-		});
+		return await this.query(command, params).then(r => r ? r[0] : null);
 	}
 
 	async rows(cad, params=[]) {
