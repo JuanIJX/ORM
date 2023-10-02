@@ -200,7 +200,7 @@ export class MysqlConnector extends DBConnector {
 		});
 		return await this.idbd.row(`SELECT ${selects.join(", ")} FROM ${tables.join(" ")} WHERE ?? = ?;`, [`${table}.${pkName}`, id]);
 	}
-	static async addElement(table, data, checkKey=null) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`\`${v}\` = ?`).join(", ")}${checkKey != null ? ` ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`, Object.values(data).map(v => this.TypeAuto(v))))[0].insertId; }
+	static async addElement(table, data, checkKey=null) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`\`${v}\` = ?`).join(", ")}${checkKey != null ? ` ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`, Object.values(data).map(v => this.TypeAuto(v)))).insertId; }
 	static async updateElementById(table, data, pkName, id) {
 		const schema = this.schemas[table];
 		const values = [];
@@ -219,9 +219,9 @@ export class MysqlConnector extends DBConnector {
 			}
 		}
 		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
-		return (await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values))[0].changedRows;
+		return (await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values)).changedRows;
 	}
-	static async deleteElementById(table, pkName, id) { return (await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id]))[0].affectedRows; }
+	static async deleteElementById(table, pkName, id) { return (await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id])).affectedRows; }
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) {
 		if(limit!=null)
 			return await this.idbd.execute(`DELETE FROM ${table}` + (
@@ -236,7 +236,7 @@ export class MysqlConnector extends DBConnector {
 					`)`,
 				].join("\n") : ""
 			) + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
-		return (await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? []))[0].affectedRows;
+		return (await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? [])).affectedRows;
 	}
 	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
 	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }

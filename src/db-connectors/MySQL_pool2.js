@@ -61,7 +61,7 @@ export default class MysqlPool {
 
 	async execute(command, params=[]) {
 		this.lastQuery = command;
-		return await this.idbd.execute(this.lastQuery, params).catch(error => {
+		return await this.idbd.execute(this.lastQuery, params).then(r => r[0]).catch(error => {
 			console.log("ERROR EXTRAÑO EN POOL execute")
 			console.log(error);
 			return null;
