@@ -13,6 +13,14 @@ npm install @ijx/orm
 ## Documentation
 ***All models should be inherit Schema***
 
+You can easy switch mysql versions (mysql/mysql2) in file ./src/connectors/mysql-conn.js line 1
+```js
+import MysqlPool from "../drivers/MySQL_pool.js";
+```
+```js
+import MysqlPool from "../drivers/MySQL_pool2.js";
+```
+
 ### List schema static functions
 
 ```typescript
