@@ -8,6 +8,7 @@ export class ORM {
 	static _conn = null;
 	static _initialized = false;
 	static _onLoad = () => {};
+	static _funcDebug = msg => {};
 
 	static async init(config) {
 		validateInitConfig(config);
@@ -36,6 +37,7 @@ export class ORM {
 		validateEntity(entity);
 
 		this._modelsTemp.add(entity);
+		this.debug(`Model ${entity.name} añadido`);
 		return this;
 	}
 
@@ -47,6 +49,9 @@ export class ORM {
 	static async close() {
 		await this._conn?.close();
 	}
+
+	static debug(msg) { this._funcDebug(msg); }
+	static onDebug(func) { this._funcDebug = func; };
 
 	static async _load() {
 		let antiBucleInfinito = this._modelsTemp.size;
