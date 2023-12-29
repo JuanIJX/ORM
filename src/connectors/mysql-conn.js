@@ -139,8 +139,8 @@ export class MysqlConnector extends DBConnector {
 	/**
 	 * OVERRIDE
 	 * 
-	 * @param {object} config 
-	 * @returns idbd
+	 * @param {object} config configuración con [host, port, user, pass, name, pref]
+	 * @returns objeto de conexion a la BD
 	 */
 	static async connect(config) {
 		super.connect(config)
