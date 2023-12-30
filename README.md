@@ -111,18 +111,18 @@ Schema.onDebug(msg => console.log(msg));
 ```
 
 ### Primary key types:
-- **TypePK.AUTO** Autogenerate primary key
-- **TypePK.NONE** Required to specify primary key
+- `TypePK.AUTO` Autogenerate primary key
+- `TypePK.NONE` Required to specify primary key
 
 ### Column types
-- **Type.INT** Integer
-- **Type.UINT** Positive integer
-- **Type.FLOAT** Decimal number
-- **Type.STRING** String
-- **Type.TEXT** Long string
-- **Type.DATE** Date: 03/01/1994
-- **Type.DATETIME** Datetime: 03/01/1997 13:45:58
-- **Type.BOOLEAN** True or false
+- `Type.INT` Integer
+- `Type.UINT` Positive integer
+- `Type.FLOAT` Decimal number
+- `Type.STRING` String
+- `Type.TEXT` Long string
+- `Type.DATE` Date: *03/01/1994*
+- `Type.DATETIME` Datetime: *03/01/1997 13:45:58*
+- `Type.BOOLEAN` True or false
  
 
 ## Examples
