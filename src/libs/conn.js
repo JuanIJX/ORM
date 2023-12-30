@@ -3,6 +3,7 @@ import { validateDbConfig } from "../utils/validations.js";
 
 export class DBConnector {
 	static idbd = null;
+	static _funcDebug = msg => {};
 	static _tables = [];
 	static schemas = {};
 	static pref = "";
@@ -20,6 +21,15 @@ export class DBConnector {
 		return null;
 	};
 
+	static onDebug(func) {
+		if(typeof func != "function")
+			throw new Error(`Se esperaba una función`);
+		this._funcDebug = func;
+	}
+
+	static debug(msg) {
+		this._funcDebug(msg);
+	}
 
 
 	// Abstract functions
@@ -227,7 +237,7 @@ export class DBConnector {
 	get tables() { return this.constructor._tables; }
 	get pkName() { return this.schemaConfig.pkName; }
 
-	debug(msg) {}
+	debug(msg) { this.constructor.debug(msg); }
 
 	/**
 	 * Crea la tabla o edita si ya está creada y hay cambios

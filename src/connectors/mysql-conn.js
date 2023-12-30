@@ -1,3 +1,4 @@
+import Sqlstring from "sqlstring"
 import MysqlPool from "../drivers/MySQL_pool2.js";
 import { DBConnector } from "../libs/conn.js";
 import { Type } from "../types/db-type.js";
@@ -182,15 +183,26 @@ export class MysqlConnector extends DBConnector {
 
 	// Abstract functions repository
 	static async getElements(table, selects=null, where=null, orders=[], order=true, limit=null, offset=0) {
-		return await this.idbd.rows(
+		const sql = Sqlstring.format(
 			`SELECT ${selects === null ? `*` : selects.map(column => `${table}.${column}`).join(", ")}`
 			+ ` FROM ${table}`
 			+ ((where!=null) ? " WHERE " + where.print() : "")
 			+ ((orders != null && orders.length > 0) ? " ORDER BY " + orders.join(", ") + ` ${order ? "ASC" : "DESC"}` : "")
 			+ ((limit!=null) ? ` LIMIT ${offset}, ${limit}` : "")
-			+ ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
+			+ ";",
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.rows(sql);
 	}
-	static async getElementById(table, pkName, id) { return await this.idbd.row(`SELECT * FROM ?? WHERE ??=?;`, [table, pkName, id]); }
+	static async getElementById(table, pkName, id) {
+		const sql = Sqlstring.format(
+			`SELECT * FROM ?? WHERE ??=?;`,
+			[table, pkName, id]
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.row(sql);
+	}
 	static async getElementByIdLeftJoin(table, pkName, id, fgName, tablesObj={}) {
 		const selects = [table + `.*`];
 		const tables = [table];
@@ -198,9 +210,20 @@ export class MysqlConnector extends DBConnector {
 			selects.push(`${key}.${value} as ${key}_${value}`);
 			tables.push(`LEFT JOIN ${key} ON ${table}.${pkName} = ${key}.${fgName}`);
 		});
-		return await this.idbd.row(`SELECT ${selects.join(", ")} FROM ${tables.join(" ")} WHERE ?? = ?;`, [`${table}.${pkName}`, id]);
+		const sql = Sqlstring.format(
+			`SELECT ${selects.join(", ")} FROM ${tables.join(" ")} WHERE ?? = ?;`,
+			[`${table}.${pkName}`, id]
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.row(sql);
 	}
-	static async addElement(table, data, checkKey=null) { return (await this.idbd.execute(`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`\`${v}\` = ?`).join(", ")}${checkKey != null ? ` ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`, Object.values(data).map(v => this.TypeAuto(v)))).insertId; }
+	static async addElement(table, data, checkKey=null) {
+		const sql = Sqlstring.format(
+			`INSERT INTO ${table} SET ${Object.keys(data).map(v =>`\`${v}\` = ?`).join(", ")}${checkKey != null ? ` ON DUPLICATE KEY UPDATE ${checkKey} = ${checkKey}` : ""};`,
+			Object.values(data).map(v => this.TypeAuto(v)));
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.execute(sql).then(result => result.insertId);
+	}
 	static async updateElementById(table, data, pkName, id) {
 		const schema = this.schemas[table];
 		const values = [];
@@ -219,30 +242,75 @@ export class MysqlConnector extends DBConnector {
 			}
 		}
 		values.push(this.TypeFunc[this.schemas[table].columns[pkName].type].d(id));
-		return (await this.idbd.execute(`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`, values)).changedRows;
+		const sql = Sqlstring.format(
+			`UPDATE ${table} SET ${campos.join(", ")} WHERE ${pkName} = ?;`,
+			values
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.execute(sql).then(result => result.changedRows);
 	}
 	static async deleteElementById(table, pkName, id) { return (await this.idbd.execute(`DELETE FROM ${table} WHERE ${pkName} = ?;`, [id])).affectedRows; }
 	static async deleteElements(table, column=null, where=null, limit=null, offset=0) {
-		if(limit!=null)
-			return await this.idbd.execute(`DELETE FROM ${table}` + (
-				column!=null && (limit!=null || where!=null) ? [
-					` WHERE ${column} IN (`,
-						`SELECT * FROM (`,
-							`SELECT ${column}`,
-							`FROM ${table}`,
-							(where!=null) ? "WHERE " + where.print() : "",
-							`LIMIT ${offset}, ${limit}`,
-						`) as tab`,
-					`)`,
-				].join("\n") : ""
-			) + ";", where?.values().map(v => this.TypeAuto(v)) ?? []);
-		return (await this.idbd.execute(`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";", where?.values().map(v => this.TypeAuto(v)) ?? [])).affectedRows;
+		const sql = Sqlstring.format(
+			(limit != null) ?
+				`DELETE FROM ${table}` + (
+					column!=null && (limit!=null || where!=null) ? [
+						` WHERE ${column} IN (`,
+							`SELECT * FROM (`,
+								`SELECT ${column}`,
+								`FROM ${table}`,
+								(where!=null) ? "WHERE " + where.print() : "",
+								`LIMIT ${offset}, ${limit}`,
+							`) as tab`,
+						`)`,
+					].join("\n") : ""
+				) + ";" :
+				`DELETE FROM ${table}` + ((where!=null) ? ` WHERE ${where.print()}` : "") + ";",
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return await this.idbd.execute(sql).then(result => result.affectedRows);
 	}
-	static async count(table, where=null) { return parseInt((await this.idbd.row(`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
-	static async max(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
-	static async min(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(MIN(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
-	static async sum(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(SUM(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
-	static async avg(table, column, where=null) { return parseFloat((await this.idbd.row(`SELECT IFNULL(AVG(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`, where?.values().map(v => this.TypeAuto(v)) ?? [])).re); }
+	static async count(table, where=null) {
+		const sql = Sqlstring.format(
+			`SELECT COUNT(*) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`,
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return parseInt(await this.idbd.row(sql).then(result => result.re));
+	}
+	static async max(table, column, where=null) {
+		const sql = Sqlstring.format(
+			`SELECT IFNULL(MAX(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`,
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return parseFloat(await this.idbd.row(sql).then(result => result.re));
+	}
+	static async min(table, column, where=null) {
+		const sql = Sqlstring.format(
+			`SELECT IFNULL(MIN(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`,
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return parseFloat(await this.idbd.row(sql).then(result => result.re));
+	}
+	static async sum(table, column, where=null) {
+		const sql = Sqlstring.format(
+			`SELECT IFNULL(SUM(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`,
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return parseFloat(await this.idbd.row(sql).then(result => result.re));
+	}
+	static async avg(table, column, where=null) {
+		const sql = Sqlstring.format(
+			`SELECT IFNULL(AVG(${column}), 0) as re FROM ${table}${(where!=null) ? " WHERE " + where.print() : ""};`,
+			where?.values().map(v => this.TypeAuto(v)) ?? []
+		);
+		this.debug(`Send SQL: '${sql}'`);
+		return parseFloat(await this.idbd.row(sql).then(result => result.re));
+	}
 
 
 	// Object
@@ -262,7 +330,7 @@ export class MysqlConnector extends DBConnector {
 			].filter(e => e!=null).join(',\n')
 			+ "\n"
 			+ `) ${this.constructor.tableExtra};`;
-		//console.log(sqlCad)
+		this.debug(`Send SQL: '${sqlCad}'`);
 		return await this.idbd.execute(sqlCad);
 	};
 }
