@@ -9,6 +9,18 @@ import List from "./list-schema.js";
 export class Schema {
 	// Connector DB
 	static connector = null;
+	static _funcDebug = msg => {};
+
+	// Debug functions
+	static onDebug(func) {
+		if(typeof func != "function")
+			throw new Error(`Se esperaba una función`);
+		this._funcDebug = func;
+	}
+
+	static debug(msg) {
+		this._funcDebug(msg);
+	}
 
 	// Column name ID
 	static fgName() { return this.name.camelToSnakeCase().slice(1) + "_id"; }
@@ -22,6 +34,7 @@ export class Schema {
 		pkName: null,
 		pkType: null,
 		pkAuto: null,
+		unique: [],
 		fg: [],
 		dpFg: [],
 		orderBy: [],
@@ -32,6 +45,8 @@ export class Schema {
 
 	// Load model to database
 	static async _load() {
+		this.debug(`${this.name} Loading schema`);
+
 		// Date columns
 		if(this.config.createdAt)
 			this.config.columns.created_at = { type: Type.DATETIME, required: true, default: () => new Date() };
@@ -46,6 +61,7 @@ export class Schema {
 					this.config.pkName = columnName;
 					this.config.pkType = descriptor.type;
 					this.config.pkAuto = descriptor.pk;
+					this.debug(`[${this.name}] Saved pk (name: '${columnName}', type: ${Type.getKeyByValue(descriptor.type)}, auto: ${TypePK.getKeyByValue(descriptor.pk)}) added`);
 				}
 			}
 		}
@@ -53,12 +69,15 @@ export class Schema {
 		// Fg
 		for (let i = 0; i < this.config.fg.length; i++) {
 			const { model, ...fgConfig } = this.config.fg[i];
+			this.debug(`[${this.name}] adding fg '${model.name}'`);
 			model.config.dpFg.push({ model: this, ...fgConfig });
 			if(fgConfig.type == TypeFG.OneToOne)
 				this.config.unique.push(model.fgName());
 		}
 
+		this.debug(`[${this.name}] loading database connector`);
 		await this.connector.load();
+		this.debug(`[${this.name}] database connector loaded`);
 	}
 
 	// Validate add data columns
@@ -122,18 +141,21 @@ export class Schema {
 	}
 
 	static async get(id) {
+		this.debug(`[${this.name}] get (id: ${id})`);
 		let dataDB = await this.connector.getElementByIdLeftJoin(id);
 		if(!dataDB)
 			return null;
 		return this._getObj(dataDB);
 	}
 	static async getBy(key, id) {
+		this.debug(`[${this.name}] getBy (key: ${key}, id: ${id})`);
 		let dataDB = await this.connector.constructor.getElementById(this.connector.table, key, id);
 		if(!dataDB)
 			return null;
 		return this._getObj(dataDB);
 	}
 	static async getAll(where=null, limit=null, offset=0, orderBy=null, orderType=null) {
+		this.debug(`[${this.name}] get all (where=${where ? JSON.stringify(where) : null}, limit=${limit}, offset=${offset}, orderBy=${orderBy}, orderType=${orderType ?? this.config.orderType})`);
 		const objs = [];
 		const dataDB = await this.connector.getElements(null, where, orderBy ?? this.config.orderBy, orderType ?? this.config.orderType, limit, offset) ?? [];
 		for (const userDB of dataDB)
@@ -141,6 +163,7 @@ export class Schema {
 		return objs;
 	}
 	static async add(dataDB, checkExists=false) {
+		this.debug(`[${this.name}] add (data: ${JSON.stringify(dataDB)}, checkExists: ${checkExists})`);
 		dataDB = this._validateData(dataDB);
 		const lastID = await this.connector.addElement(dataDB, checkExists ? this.config.pkName : null);
 		if(checkExists) // Ya que lo devuelto puede no ser lo real
@@ -150,12 +173,15 @@ export class Schema {
 		return this._getObj(dataDB);
 	}
 	static async delete(id) {
+		this.debug(`[${this.name}] delete (id: ${id})`);
 		return (await this.connector.deleteElementById(id))[0]?.affectedRows == 1;
 	}
 	static async deleteAll(where=null, limit=null, offset=0) {
+		this.debug(`[${this.name}] delete all (where=${where ? JSON.stringify(where) : null}, limit=${limit}, offset=${offset})`);
 		return await this.connector.deleteElements(where, limit, offset);
 	}
 	static async count(where=null) {
+		this.debug(`[${this.name}] count (where=${where ? JSON.stringify(where) : null})`);
 		return await this.connector.count(where);
 	}
 
@@ -195,12 +221,14 @@ export class Schema {
 		if(Object.keys(dataDB).length > 0) {
 			if(this.constructor.config.modifiedAt)
 				dataDB[`modified_at`] = new Date();
+			this.constructor.debug(`[${this.constructor.name}] save object (id: ${this._id}, data: ${JSON.stringify(dataDB)})`);
 			await this.constructor.connector.updateElementById(dataDB, this._id);
 		}
 		return Object.keys(dataDB).length;
 	}
 
 	async delete() {
+		this.constructor.debug(`[${this.constructor.name}] delete object (id: ${this._id})`);
 		await this.constructor.connector.deleteElementById(this._id);
 		for (const fg of this.constructor.config.fg)
 			this[fg.model.name.toLowerCase()][this.constructor.name.toLowerCase()] = null;
