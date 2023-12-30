@@ -246,8 +246,8 @@ export class MysqlConnector extends DBConnector {
 
 
 	// Object
-	constructor(idbd, schemaConfig) {
-		super(idbd, schemaConfig);
+	constructor(schema) {
+		super(schema);
 	}
 
 	async createTable() {
