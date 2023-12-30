@@ -74,47 +74,55 @@ deleteAll(where?: Where, limit?: number|null, offset?: number): Promise<number>
 count(where?: Where): Promise<number>
 ```
 
- ### List schema functions
- ```typescript
- /**
-  * Set value to attribute
-  * @param value data
-  * @return schema
-  */
- setExampleAttribute...(value: any): Schema
- /**
-  * Save schema
-  * @return number of changed attributes
-  */
- save(): Promise<number>
- /**
-  * Delete schema
-  */
- delete(): Promise<void>
- /**
-  * Devuelve un objeto para transformar en json
-  */
- toObject(): Object
- /**
-  * Transform schema to json string
-  */
- toJSON(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string
+### List schema functions
+```typescript
+/**
+ * Set value to attribute
+ * @param value data
+ * @return schema
+ */
+setExampleAttribute...(value: any): Schema
+/**
+ * Save schema
+ * @return number of changed attributes
+ */
+save(): Promise<number>
+/**
+ * Delete schema
+ */
+delete(): Promise<void>
+/**
+ * Devuelve un objeto para transformar en json
+ */
+toObject(): Object
+/**
+ * Transform schema to json string
+ */
+toJSON(replacer?: (this: any, key: string, value: any) => any, space?: string | number): string
  ```
 
- ### TypePK
- Specifies the type of primary key:
- - AUTO: Autogenerate primary key
- - NONE: Required to specify primary key
+### Debug
+```js
+import ORM, { DBConnector, Schema } from "@ijx/orm"
 
- ### Column types
-- INT
-- UINT
-- FLOAT
-- STRING
-- TEXT
-- DATE
-- DATETIME
-- BOOLEAN
+ORM.onDebug(msg => console.log(msg));
+DBConnector.onDebug(msg => console.log(msg));
+Schema.onDebug(msg => console.log(msg));
+```
+
+### Primary key types:
+- **TypePK.AUTO** Autogenerate primary key
+- **TypePK.NONE** Required to specify primary key
+
+### Column types
+- **Type.INT** Integer
+- **Type.UINT** Positive integer
+- **Type.FLOAT** Decimal number
+- **Type.STRING** String
+- **Type.TEXT** Long string
+- **Type.DATE** Date: 03/01/1994
+- **Type.DATETIME** Datetime: 03/01/1997 13:45:58
+- **Type.BOOLEAN** True or false
  
 
 ## Examples
