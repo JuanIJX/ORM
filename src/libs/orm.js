@@ -13,7 +13,7 @@ export class ORM {
 		validateInitConfig(config);
 		const { conn, ...dbConfig } = config.db;
 		await conn.connect(dbConfig);
-		this.instance.debug(`Conectado a la base de datos`);
+		this.instance.debug(`Connected to database`);
 		this.instance._conn = conn;
 		await this.instance._load();
 		this.instance._initialized = true;
@@ -27,7 +27,7 @@ export class ORM {
 
 	static onDebug(func) {
 		if(typeof func != "function")
-			throw new Error(`Se esperaba una función`);
+			throw new TypeError(`Function excepted`);
 		this.instance._funcDebug = func;
 	};
 
@@ -46,15 +46,15 @@ export class ORM {
 
 	addEntity(entity) {
 		if(this._initialized)
-			throw newError(`No se pueden añadir entidades despues de inicializar`);
+			throw newError(`Cannot add entities after initializing`);
 		if(this._modelsTemp.has(entity))
-			throw newError(`Entity ${entity.name} repetido`);
+			throw newError(`Entity '${entity.name}' repetido`);
 		if(entity.prototype instanceof Schema == false) // Schema.isPrototypeOf(entity)
-			throw newError(`Entity ${entity.name} debe extender Schema`);
+			throw newError(`Entity '${entity.name}' must be inherited from Schema`);
 		validateEntity(entity);
 
 		this._modelsTemp.add(entity);
-		this.debug(`Añadido el model '${entity.name}'`);
+		this.debug(`Model '${entity.name} added'`);
 		return this;
 	}
 
@@ -74,12 +74,12 @@ export class ORM {
 					this._conn.schemas[this._conn.pref + model.config.table] = model.config;
 					model.connector = new this._conn(model);
 					await model._load();
-					this.debug(`Model '${model.name}' cargado`);
+					this.debug(`Model '${model.name}' loaded`);
 				}
 			}
 			antiBucleInfinito--;
 		}
 		if(this._modelsTemp.size > 0)
-			throw newError(`No se pudieron cargar los models: [ ${[...this._modelsTemp].map(m => m.name).join(", ")} ]`);
+			throw newError(`The models could not be loaded: [ ${[...this._modelsTemp].map(m => `${m.name}`).join(", ")} ]`);
 	}
 }
