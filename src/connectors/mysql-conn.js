@@ -323,7 +323,7 @@ export class MysqlConnector extends DBConnector {
 		let sqlCad = `CREATE TABLE \`${this.table}\` (`
 			+ '\n'
 			+ [
-				...this.schemaConfig.columns.map((key, value) => this.constructor.getColumnSql(key, value)).map(e => '\t' + e),
+				...this.schemaConfig.columns.map((value, key) => this.constructor.getColumnSql(key, value)).map(e => '\t' + e),
 				...this.schemaConfig.fg.map(modelInfo => `\`${modelInfo.model.fgName()}\` ${this.constructor.TypeFunc[modelInfo.model.config.columns[modelInfo.model.connector.pkName].type].t(modelInfo.model.config.columns[modelInfo.model.connector.pkName].size)} ${modelInfo.required ? `NOT` : `DEFAULT`} NULL`).map(e => '\t' + e),
 				...this.schemaConfig.unique.map(unique => { unique = (Array.isArray(unique) ? unique : [unique]); return `UNIQUE KEY \`${unique.join("_")}\` (\`${unique.join("`,`")}\`)` }).map(e => '\t' + e),
 				...this.schemaConfig.fg.map(modelInfo => `CONSTRAINT \`${this.table}_ibfk_${modelInfo.model.fgName()}\` FOREIGN KEY (\`${modelInfo.model.fgName()}\`) REFERENCES \`${modelInfo.model.connector.table}\` (\`${modelInfo.model.connector.pkName}\`) ON DELETE ${modelInfo.delete ? 'CASCADE' : 'RESTRICT'} ON UPDATE ${modelInfo.update ? 'CASCADE' : 'RESTRICT'}`).map(e => '\t' + e),
