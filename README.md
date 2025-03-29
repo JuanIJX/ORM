@@ -1,4 +1,4 @@
-# ORM (beta)
+# ORM
 
 Object-Relational mapping
 
