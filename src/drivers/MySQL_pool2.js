@@ -24,7 +24,9 @@ export default class MysqlPool {
 			
 			waitForConnections: true,
 			connectionLimit: 10,
-			queueLimit: 0
+			queueLimit: 0,
+			enableKeepAlive: true,
+			keepAliveInitialDelay: 10000,
 		}).promise();
 	}
 
